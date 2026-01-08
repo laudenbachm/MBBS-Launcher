@@ -1,7 +1,5 @@
 # MBBS Launcher
 
-![MBBS Launcher](images/MBBS%20Launcher%20ICON%201024x1024.png)
-
 **Version:** v1.00
 
 ## Screenshot
