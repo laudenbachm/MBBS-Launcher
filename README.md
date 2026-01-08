@@ -50,6 +50,32 @@ This was coded by a guy who Googles "how to exit vim" every single time. There W
 
 **Note:** All images and resources are embedded in the executable - no external files required!
 
+## Antivirus False Positives
+
+Some antivirus software may flag MBBS Launcher as suspicious due to legitimate behaviors that are common in system utilities:
+
+- **Process enumeration** - Checking if BBS programs are already running
+- **Window manipulation** - Bringing running programs to foreground
+- **Launching executables** - Starting BBS utilities on your behalf
+- **Startup integration** - Optional auto-launch at Windows startup
+
+**This is a FALSE POSITIVE.** The application is completely safe and open source.
+
+### What We're Doing About It
+
+- The executable has been submitted to Microsoft Defender and other major AV vendors for whitelisting
+- All source code is publicly available in this repository for review
+- We are working on obtaining a code signing certificate to eliminate these warnings
+
+### If Your Antivirus Flags It
+
+1. **Review the source code** - All code is available in this repository
+2. **Scan on VirusTotal** - Check the analysis at https://www.virustotal.com
+3. **Add an exception** - Add `MBBS Launcher.exe` to your antivirus exclusions
+4. **Report as false positive** - Help us by reporting it to your AV vendor
+
+For more information, see our [Security Policy](https://github.com/laudenbachm/MBBS-Launcher/security/policy).
+
 ## Usage
 
 ### Launching Programs
