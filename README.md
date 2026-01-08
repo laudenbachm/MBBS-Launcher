@@ -67,10 +67,23 @@ Some antivirus software may flag MBBS Launcher as suspicious due to legitimate b
 - All source code is publicly available in this repository for review
 - We are working on obtaining a code signing certificate to eliminate these warnings
 
-### If Your Antivirus Flags It
+### If Windows Defender Blocks or Deletes the File
+
+**Windows Defender may quarantine this file.** To use MBBS Launcher, you need to add an exclusion:
+
+1. Open **Windows Security** (search for it in Start menu)
+2. Go to **Virus & threat protection** → **Manage settings**
+3. Scroll down to **Exclusions** → Click **Add or remove exclusions**
+4. Click **Add an exclusion** → **Folder**
+5. Browse to and select the folder containing `MBBS Launcher.exe`
+6. Click **Select Folder**
+
+**Note:** This is safe to do because the application is open source and has been verified clean (VirusTotal: 2/70 detection rate, no major AV vendors flagged it).
+
+### If Other Antivirus Software Flags It
 
 1. **Review the source code** - All code is available in this repository
-2. **Scan on VirusTotal** - Check the analysis at https://www.virustotal.com
+2. **Scan on VirusTotal** - Check the analysis: https://www.virustotal.com/gui/file/df63ec5c68374a8fcd753466d985d756072d0c9bb04542e7ce918a8f7fa30994
 3. **Add an exception** - Add `MBBS Launcher.exe` to your antivirus exclusions
 4. **Report as false positive** - Help us by reporting it to your AV vendor
 
