@@ -24,6 +24,11 @@ namespace MBBSLauncher
         public const string TAGLINE = "Created with Love in Iowa";
         public const string GITHUB_URL = "https://github.com/laudenbachm/MBBS-Launcher";
 
+        // URLs displayed on the launcher screen
+        public const string WEBSITE_URL = "https://themajorbbs.com";
+        public const string DEMO_BBS_URL = "telnet://bbs.themajorbbs.com";
+        public const string DISCORD_URL = "https://discord.gg/VhRk9xpq30";
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>

@@ -303,6 +303,26 @@ namespace MBBSLauncher.Forms
             float x = e.X / (float)this.ClientSize.Width;
             float y = e.Y / (float)this.ClientSize.Height;
 
+            // Check for URL clicks first (upper right corner)
+            // Website: themajorbbs.com
+            if (x >= 0.635f && x <= 0.990f && y >= 0.154f && y <= 0.191f)
+            {
+                LaunchURL(Program.WEBSITE_URL);
+                return;
+            }
+            // Demo BBS: bbs.themajorbbs.com
+            else if (x >= 0.635f && x <= 0.997f && y >= 0.204f && y <= 0.241f)
+            {
+                LaunchURL(Program.DEMO_BBS_URL);
+                return;
+            }
+            // Discord: discord.gg/VhRk9xpq30
+            else if (x >= 0.635f && x <= 1.003f && y >= 0.247f && y <= 0.284f)
+            {
+                LaunchURL(Program.DISCORD_URL);
+                return;
+            }
+
             // Define clickable regions based on background image (1440x810 reference)
             // Left column: Options 1, 2, 3, 4
             if (x >= 0.038f && x <= 0.101f) // x: 54-145 pixels
@@ -578,6 +598,29 @@ namespace MBBSLauncher.Forms
 
             // Reload config after editing
             _config.LoadConfig();
+        }
+
+        private void LaunchURL(string url)
+        {
+            try
+            {
+                // Use Process.Start to launch the URL
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to open URL:\n{url}\n\nError: {ex.Message}",
+                    "Error Opening URL",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                Program.LogError("LaunchURL", ex);
+            }
         }
 
         // Note: Dispose method is in MainForm.Designer.cs
