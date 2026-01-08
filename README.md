@@ -11,6 +11,8 @@
 
 MBBS Launcher is a Windows application that provides easy access to tools and utilities for The Major BBS Version 10 sysops. Inspired by the classic DOS-era Major BBS launcher interface, this modern version brings the nostalgic feel of the original while adding contemporary features and usability.
 
+**📺 Watch the Demo:** [MBBS Launcher Demo on YouTube](https://youtu.be/izJImFGJ2NA)
+
 ## 🐛 Bug Disclosure
 
 This was coded by a guy who Googles "how to exit vim" every single time. There WILL be bugs. There WILL be spelling mistakes. There WILL be profanity shouted at my monitor. You've been warned!
