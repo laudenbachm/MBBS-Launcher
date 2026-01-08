@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+    <AssemblyName>MBBS Launcher</AssemblyName>
+    <RootNamespace>MBBSLauncher</RootNamespace>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- Version Information -->
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>MBBS Launcher</Product>
+    <Company>Mark Laudenbach</Company>
+    <Copyright>Copyright © 2026 Mark Laudenbach - Created with Love in Iowa</Copyright>
+    <Description>A launcher application for The Major BBS Version 10</Description>
+
+    <!-- 32-bit configuration -->
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
+
+    <!-- Single File Publishing -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Compression only works with self-contained builds -->
+    <!-- <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile> -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embed all resources into the assembly for single-file deployment -->
+    <EmbeddedResource Include="Resources\background.png">
+      <LogicalName>MBBSLauncher.Resources.background.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\icon.png">
+      <LogicalName>MBBSLauncher.Resources.icon.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\icon.ico">
+      <LogicalName>MBBSLauncher.Resources.icon.ico</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
