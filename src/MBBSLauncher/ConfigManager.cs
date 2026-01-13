@@ -3,10 +3,12 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: ConfigManager.cs
-// Version: v1.00
+// Version: v1.10
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
+// 26.01.12.1 - Added system tray configuration options
+// 26.01.12.2 - Added AutoStartBBS, AutoStartDelay, QuietMode settings
 
 using System;
 using System.Collections.Generic;
@@ -21,11 +23,17 @@ namespace MBBSLauncher
     /// </summary>
     public class ConfigManager
     {
-        private const string CONFIG_FILE = "MBBSLauncher.ini";
+        private const string CONFIG_FILENAME = "MBBSLauncher.ini";
+        private readonly string _configFilePath;
         private Dictionary<string, Dictionary<string, string>> _configData;
 
         public ConfigManager()
         {
+            // Use executable's directory for config file (not working directory)
+            // This ensures config is found when app starts from Windows startup
+            string exeDir = AppDomain.CurrentDomain.BaseDirectory;
+            _configFilePath = Path.Combine(exeDir, CONFIG_FILENAME);
+
             _configData = new Dictionary<string, Dictionary<string, string>>();
             LoadConfig();
         }
@@ -37,7 +45,7 @@ namespace MBBSLauncher
         {
             _configData.Clear();
 
-            if (!File.Exists(CONFIG_FILE))
+            if (!File.Exists(_configFilePath))
             {
                 CreateDefaultConfig();
                 return;
@@ -46,7 +54,7 @@ namespace MBBSLauncher
             try
             {
                 string currentSection = "";
-                foreach (string line in File.ReadAllLines(CONFIG_FILE))
+                foreach (string line in File.ReadAllLines(_configFilePath))
                 {
                     string trimmedLine = line.Trim();
 
@@ -106,7 +114,7 @@ namespace MBBSLauncher
                     sb.AppendLine();
                 }
 
-                File.WriteAllText(CONFIG_FILE, sb.ToString());
+                File.WriteAllText(_configFilePath, sb.ToString());
             }
             catch (Exception ex)
             {
@@ -143,7 +151,13 @@ namespace MBBSLauncher
             // Settings section
             _configData["Settings"] = new Dictionary<string, string>
             {
-                { "AutoLaunchAtStartup", "false" }
+                { "AutoLaunchAtStartup", "false" },
+                { "MinimizeToTray", "true" },
+                { "ShowTrayIcon", "true" },
+                { "EscMinimizesToTray", "false" }, // ESC minimizes to taskbar by default, true = minimize to tray
+                { "AutoStartBBS", "false" },       // OFF by default - auto-launch BBS when launcher starts
+                { "AutoStartDelay", "5" },         // Seconds to wait before auto-starting (allows cancel)
+                { "QuietMode", "false" }           // Minimize to tray after auto-start
             };
 
             // Programs section

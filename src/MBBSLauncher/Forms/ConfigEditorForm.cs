@@ -3,10 +3,11 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/ConfigEditorForm.cs
-// Version: v1.00
+// Version: v1.10
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
+// 26.01.12.1 - Added Auto-Start BBS settings and F2 Module Editor option
 
 using System;
 using System.Drawing;
@@ -19,10 +20,19 @@ namespace MBBSLauncher.Forms
         private ConfigManager _config;
         private TextBox? _bbsPathTextBox;
         private TextBox[] _programTextBoxes = Array.Empty<TextBox>();
-        private TextBox[] _nameTextBoxes = Array.Empty<TextBox>();
         private TextBox? _program99TextBox;
-        private TextBox? _name99TextBox;
         private CheckBox? _autoLaunchCheckBox;
+
+        // Auto-Start BBS controls
+        private CheckBox? _autoStartBBSCheckBox;
+        private NumericUpDown? _autoStartDelayNumeric;
+        private CheckBox? _quietModeCheckBox;
+
+        // Behavior settings
+        private CheckBox? _escToTrayCheckBox;
+
+        // F2 Module Editor
+        private TextBox? _moduleEditorTextBox;
 
         public ConfigEditorForm(ConfigManager config)
         {
@@ -35,7 +45,7 @@ namespace MBBSLauncher.Forms
         private void InitializeCustomControls()
         {
             this.Text = $"{Program.APP_NAME} {Program.APP_VERSION} - Configuration Editor";
-            this.Size = new Size(700, 680);
+            this.Size = new Size(700, 800);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -110,6 +120,76 @@ namespace MBBSLauncher.Forms
                 Checked = false
             };
             this.Controls.Add(_autoLaunchCheckBox);
+            yPos += 30;
+
+            // Auto-Start BBS section
+            Label autoStartLabel = new Label
+            {
+                Text = "Auto-Start BBS Settings:",
+                Location = new Point(20, yPos),
+                Size = new Size(650, 20),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            this.Controls.Add(autoStartLabel);
+            yPos += 25;
+
+            _autoStartBBSCheckBox = new CheckBox
+            {
+                Text = "Automatically start BBS (Option 5) when launcher opens",
+                Location = new Point(40, yPos),
+                Size = new Size(400, 25),
+                Font = new Font("Segoe UI", 9),
+                Checked = false
+            };
+            this.Controls.Add(_autoStartBBSCheckBox);
+
+            Label delayLabel = new Label
+            {
+                Text = "Delay:",
+                Location = new Point(450, yPos + 3),
+                Size = new Size(45, 20)
+            };
+            this.Controls.Add(delayLabel);
+
+            _autoStartDelayNumeric = new NumericUpDown
+            {
+                Location = new Point(495, yPos),
+                Size = new Size(50, 25),
+                Minimum = 0,
+                Maximum = 60,
+                Value = 5
+            };
+            this.Controls.Add(_autoStartDelayNumeric);
+
+            Label secondsLabel = new Label
+            {
+                Text = "seconds",
+                Location = new Point(550, yPos + 3),
+                Size = new Size(60, 20)
+            };
+            this.Controls.Add(secondsLabel);
+            yPos += 30;
+
+            _quietModeCheckBox = new CheckBox
+            {
+                Text = "Quiet mode (minimize to tray after auto-start)",
+                Location = new Point(40, yPos),
+                Size = new Size(400, 25),
+                Font = new Font("Segoe UI", 9),
+                Checked = false
+            };
+            this.Controls.Add(_quietModeCheckBox);
+            yPos += 30;
+
+            _escToTrayCheckBox = new CheckBox
+            {
+                Text = "ESC key minimizes to system tray (instead of taskbar)",
+                Location = new Point(40, yPos),
+                Size = new Size(400, 25),
+                Font = new Font("Segoe UI", 9),
+                Checked = false
+            };
+            this.Controls.Add(_escToTrayCheckBox);
             yPos += 35;
 
             // Paths section
@@ -172,51 +252,46 @@ namespace MBBSLauncher.Forms
             };
             this.Controls.Add(scrollPanel);
 
+            // Static option names (matching background image)
+            string[] optionNames = new string[]
+            {
+                "Hardware Setup",        // 1
+                "Design Menu Tree",      // 2
+                "Security & Accounting", // 3
+                "Configuration Options", // 4
+                "Go!",                   // 5
+                "Edit Text Blocks",      // 6
+                "Basic Utilities",       // 7
+                "Reports"                // 8
+            };
+
             _programTextBoxes = new TextBox[8];
-            _nameTextBoxes = new TextBox[8];
 
             int innerYPos = 10;
             for (int i = 1; i <= 8; i++)
             {
+                // Option number and name as single bold label
                 Label optionLabel = new Label
                 {
-                    Text = $"Option {i}:",
+                    Text = $"{i} - {optionNames[i - 1]}",
                     Location = new Point(10, innerYPos),
-                    Size = new Size(60, 20),
+                    Size = new Size(200, 20),
                     Font = new Font("Segoe UI", 9, FontStyle.Bold)
                 };
                 scrollPanel.Controls.Add(optionLabel);
 
-                Label nameLabel = new Label
-                {
-                    Text = "Name:",
-                    Location = new Point(80, innerYPos),
-                    Size = new Size(50, 20)
-                };
-                scrollPanel.Controls.Add(nameLabel);
-
-                _nameTextBoxes[i - 1] = new TextBox
-                {
-                    Location = new Point(130, innerYPos),
-                    Size = new Size(200, 20),
-                    Tag = $"Option{i}Name"
-                };
-                scrollPanel.Controls.Add(_nameTextBoxes[i - 1]);
-
-                innerYPos += 30;
-
                 Label pathLabel = new Label
                 {
                     Text = "Program:",
-                    Location = new Point(80, innerYPos),
+                    Location = new Point(220, innerYPos),
                     Size = new Size(60, 20)
                 };
                 scrollPanel.Controls.Add(pathLabel);
 
                 _programTextBoxes[i - 1] = new TextBox
                 {
-                    Location = new Point(130, innerYPos),
-                    Size = new Size(400, 20),
+                    Location = new Point(280, innerYPos),
+                    Size = new Size(250, 20),
                     Tag = $"Option{i}"
                 };
                 scrollPanel.Controls.Add(_programTextBoxes[i - 1]);
@@ -231,49 +306,31 @@ namespace MBBSLauncher.Forms
                 browseProgramBtn.Click += BrowseProgramButton_Click;
                 scrollPanel.Controls.Add(browseProgramBtn);
 
-                innerYPos += 40;
+                innerYPos += 30;
             }
 
             // Add Option 99
             Label option99Label = new Label
             {
-                Text = "Option 99:",
+                Text = "99 - CNF 99",
                 Location = new Point(10, innerYPos),
-                Size = new Size(70, 20),
+                Size = new Size(200, 20),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold)
             };
             scrollPanel.Controls.Add(option99Label);
 
-            Label name99Label = new Label
-            {
-                Text = "Name:",
-                Location = new Point(80, innerYPos),
-                Size = new Size(50, 20)
-            };
-            scrollPanel.Controls.Add(name99Label);
-
-            _name99TextBox = new TextBox
-            {
-                Location = new Point(130, innerYPos),
-                Size = new Size(200, 20),
-                Tag = "Option99Name"
-            };
-            scrollPanel.Controls.Add(_name99TextBox);
-
-            innerYPos += 30;
-
             Label path99Label = new Label
             {
                 Text = "Program:",
-                Location = new Point(80, innerYPos),
+                Location = new Point(220, innerYPos),
                 Size = new Size(60, 20)
             };
             scrollPanel.Controls.Add(path99Label);
 
             _program99TextBox = new TextBox
             {
-                Location = new Point(130, innerYPos),
-                Size = new Size(400, 20),
+                Location = new Point(280, innerYPos),
+                Size = new Size(250, 20),
                 Tag = "Option99"
             };
             scrollPanel.Controls.Add(_program99TextBox);
@@ -287,6 +344,44 @@ namespace MBBSLauncher.Forms
             };
             browse99Btn.Click += BrowseProgramButton_Click;
             scrollPanel.Controls.Add(browse99Btn);
+
+            innerYPos += 30;
+
+            // F2 - Enable / Disable Modules (hidden option, same layout as options 1-8)
+            Label f2Label = new Label
+            {
+                Text = "F2 - Enable / Disable Modules",
+                Location = new Point(10, innerYPos),
+                Size = new Size(200, 20),
+                Font = new Font("Segoe UI", 9, FontStyle.Bold)
+            };
+            scrollPanel.Controls.Add(f2Label);
+
+            Label modulePathLabel = new Label
+            {
+                Text = "Program:",
+                Location = new Point(220, innerYPos),
+                Size = new Size(60, 20)
+            };
+            scrollPanel.Controls.Add(modulePathLabel);
+
+            _moduleEditorTextBox = new TextBox
+            {
+                Location = new Point(280, innerYPos),
+                Size = new Size(250, 20),
+                Tag = "ModuleEditor"
+            };
+            scrollPanel.Controls.Add(_moduleEditorTextBox);
+
+            Button browseF2Btn = new Button
+            {
+                Text = "Browse...",
+                Location = new Point(540, innerYPos - 2),
+                Size = new Size(80, 24),
+                Tag = _moduleEditorTextBox
+            };
+            browseF2Btn.Click += BrowseProgramButton_Click;
+            scrollPanel.Controls.Add(browseF2Btn);
 
             yPos += 310;
 
@@ -325,21 +420,58 @@ namespace MBBSLauncher.Forms
             // Load programs (Options 1-8 only, Option 9 is skipped)
             for (int i = 1; i <= 8; i++)
             {
-                _nameTextBoxes[i - 1].Text = _config.GetValue("Programs", $"Option{i}Name");
                 _programTextBoxes[i - 1].Text = _config.GetValue("Programs", $"Option{i}");
             }
 
             // Load option 99
-            if (_name99TextBox != null)
-                _name99TextBox.Text = _config.GetValue("Programs", "Option99Name");
             if (_program99TextBox != null)
                 _program99TextBox.Text = _config.GetValue("Programs", "Option99");
 
-            // Load auto-launch setting
+            // Load auto-launch setting from actual registry state (not INI)
             if (_autoLaunchCheckBox != null)
             {
-                string autoLaunchValue = _config.GetValue("Settings", "AutoLaunchAtStartup", "false");
-                _autoLaunchCheckBox.Checked = autoLaunchValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                _autoLaunchCheckBox.Checked = IsInWindowsStartup();
+            }
+
+            // Load auto-start BBS settings
+            if (_autoStartBBSCheckBox != null)
+            {
+                string autoStartValue = _config.GetValue("Settings", "AutoStartBBS", "false");
+                _autoStartBBSCheckBox.Checked = autoStartValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (_autoStartDelayNumeric != null)
+            {
+                if (int.TryParse(_config.GetValue("Settings", "AutoStartDelay", "5"), out int delay))
+                {
+                    _autoStartDelayNumeric.Value = Math.Max(0, Math.Min(60, delay));
+                }
+            }
+
+            if (_quietModeCheckBox != null)
+            {
+                string quietModeValue = _config.GetValue("Settings", "QuietMode", "false");
+                _quietModeCheckBox.Checked = quietModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (_escToTrayCheckBox != null)
+            {
+                string escToTrayValue = _config.GetValue("Settings", "EscMinimizesToTray", "false");
+                _escToTrayCheckBox.Checked = escToTrayValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // Load F2 Module Editor path
+            if (_moduleEditorTextBox != null)
+            {
+                string bbsPath = _config.GetValue("Paths", "BBSPath", @"C:\BBSV10");
+                string moduleEditorPath = _config.GetValue("Programs", "ModuleEditor", "");
+
+                // Default to WGSDMOD.exe in BBS path if not configured
+                if (string.IsNullOrEmpty(moduleEditorPath))
+                {
+                    moduleEditorPath = System.IO.Path.Combine(bbsPath, "WGSDMOD.exe");
+                }
+                _moduleEditorTextBox.Text = moduleEditorPath;
             }
         }
 
@@ -397,17 +529,32 @@ namespace MBBSLauncher.Forms
             }
 
             // Save programs (Options 1-8 only, Option 9 is skipped)
+            // Names are fixed to match the background image, only paths are configurable
             for (int i = 1; i <= 8; i++)
             {
-                _config.SetValue("Programs", $"Option{i}Name", _nameTextBoxes[i - 1].Text);
                 _config.SetValue("Programs", $"Option{i}", _programTextBoxes[i - 1].Text);
             }
 
             // Save option 99
-            if (_name99TextBox != null)
-                _config.SetValue("Programs", "Option99Name", _name99TextBox.Text);
             if (_program99TextBox != null)
                 _config.SetValue("Programs", "Option99", _program99TextBox.Text);
+
+            // Save F2 Module Editor path
+            if (_moduleEditorTextBox != null)
+                _config.SetValue("Programs", "ModuleEditor", _moduleEditorTextBox.Text);
+
+            // Save auto-start BBS settings
+            if (_autoStartBBSCheckBox != null)
+                _config.SetValue("Settings", "AutoStartBBS", _autoStartBBSCheckBox.Checked.ToString().ToLower());
+
+            if (_autoStartDelayNumeric != null)
+                _config.SetValue("Settings", "AutoStartDelay", ((int)_autoStartDelayNumeric.Value).ToString());
+
+            if (_quietModeCheckBox != null)
+                _config.SetValue("Settings", "QuietMode", _quietModeCheckBox.Checked.ToString().ToLower());
+
+            if (_escToTrayCheckBox != null)
+                _config.SetValue("Settings", "EscMinimizesToTray", _escToTrayCheckBox.Checked.ToString().ToLower());
 
             // Save auto-launch setting and update Windows startup
             if (_autoLaunchCheckBox != null)
@@ -517,6 +664,26 @@ namespace MBBSLauncher.Forms
                 Program.LogError("RemoveFromWindowsStartup", ex);
                 throw;
             }
+        }
+
+        private bool IsInWindowsStartup()
+        {
+            try
+            {
+                using (Microsoft.Win32.RegistryKey? key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                    @"Software\Microsoft\Windows\CurrentVersion\Run", false))
+                {
+                    if (key != null)
+                    {
+                        return key.GetValue("MBBS Launcher") != null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError("IsInWindowsStartup", ex);
+            }
+            return false;
         }
     }
 }

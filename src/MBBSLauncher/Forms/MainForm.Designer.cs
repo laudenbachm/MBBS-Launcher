@@ -3,10 +3,11 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/MainForm.Designer.cs
-// Version: v1.00
+// Version: v1.10
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
+// 26.01.12.1 - Added NotifyIcon cleanup in Dispose
 
 namespace MBBSLauncher.Forms
 {
@@ -31,6 +32,17 @@ namespace MBBSLauncher.Forms
                 }
                 // Clean up background image
                 _backgroundImage?.Dispose();
+
+                // Clean up tray icon (important to avoid orphaned tray icons)
+                if (_trayIcon != null)
+                {
+                    _trayIcon.Visible = false;
+                    _trayIcon.Dispose();
+                    _trayIcon = null;
+                }
+
+                // Clean up tray context menu
+                _trayMenu?.Dispose();
             }
             base.Dispose(disposing);
         }

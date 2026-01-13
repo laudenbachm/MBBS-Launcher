@@ -3,11 +3,15 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/MainForm.cs
-// Version: v1.00
+// Version: v1.10
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
 // 26.01.07.3 - 07:15PM - Added better error handling for startup
+// 26.01.12.1 - Added system tray icon with context menu and status tracking
+// 26.01.12.2 - Added mouse navigation with hover effects and cursor changes
+// 26.01.12.3 - Added auto-start BBS on startup with countdown and cancel
+// 26.01.12.4 - Added F1 Help dialog and F2 Module Editor launcher
 
 using System;
 using System.Drawing;
@@ -20,18 +24,39 @@ namespace MBBSLauncher.Forms
     {
         private ConfigManager _config;
         private Image? _backgroundImage;
-        private int _selectedOption = 5; // Default to option 5 (Go!)
         private System.Windows.Forms.Timer? _digitTimer;
         private string _digitBuffer = "";
+
+        // System tray components
+        private NotifyIcon? _trayIcon;
+        private ContextMenuStrip? _trayMenu;
+        private ToolStripMenuItem? _showMenuItem;
+        private ToolStripMenuItem? _startBBSMenuItem;
+        private ToolStripMenuItem? _bringToFrontMenuItem;
+        private ToolStripMenuItem? _configMenuItem;
+        private ToolStripMenuItem? _exitMenuItem;
+
+        // Running program state tracking
+        private string? _runningProgramName;
+        private System.Diagnostics.Process? _runningProcess;
+        private bool _isFirstMinimizeToTray = true;
+
+
+        // Auto-start BBS countdown
+        private System.Windows.Forms.Timer? _autoStartTimer;
+        private int _autoStartCountdown = 0;
+        private bool _autoStartCancelled = false;
+
+        // Track window state for restore detection
+        private FormWindowState _previousWindowState = FormWindowState.Normal;
 
         public MainForm()
         {
             try
             {
                 InitializeComponent();
-                InitializeCustomComponents();
-
                 _config = new ConfigManager();
+                InitializeCustomComponents();
 
                 // Check if wgserver is already running on startup
                 try
@@ -105,6 +130,11 @@ namespace MBBSLauncher.Forms
             _digitTimer.Interval = 1000; // 1 second timeout for multi-digit input
             _digitTimer.Tick += DigitTimer_Tick;
 
+            // Initialize auto-start countdown timer
+            _autoStartTimer = new System.Windows.Forms.Timer();
+            _autoStartTimer.Interval = 1000; // 1 second interval
+            _autoStartTimer.Tick += AutoStartTimer_Tick;
+
             // Handle keyboard input
             this.KeyDown += MainForm_KeyDown;
             this.Paint += MainForm_Paint;
@@ -112,9 +142,187 @@ namespace MBBSLauncher.Forms
             this.FormClosing += MainForm_FormClosing;
             this.Move += MainForm_Move;
             this.MouseClick += MainForm_MouseClick;
+            this.MouseMove += MainForm_MouseMove;
+            this.MouseLeave += MainForm_MouseLeave;
             this.VisibleChanged += MainForm_VisibleChanged;
             this.Activated += MainForm_Activated;
             this.Shown += MainForm_Shown;
+
+            // Initialize system tray icon
+            InitializeTrayIcon();
+        }
+
+        private void InitializeTrayIcon()
+        {
+            // Create context menu for tray icon
+            _trayMenu = new ContextMenuStrip();
+
+            _showMenuItem = new ToolStripMenuItem("Show Launcher", null, TrayMenu_ShowLauncher);
+            _showMenuItem.Font = new Font(_showMenuItem.Font, FontStyle.Bold);
+
+            _startBBSMenuItem = new ToolStripMenuItem("Start BBS (Go!)", null, TrayMenu_StartBBS);
+
+            _bringToFrontMenuItem = new ToolStripMenuItem("Bring Program to Front", null, TrayMenu_BringToFront);
+            _bringToFrontMenuItem.Visible = false; // Hidden by default, shown when program is running
+
+            _configMenuItem = new ToolStripMenuItem("Configuration (F12)", null, TrayMenu_OpenConfig);
+
+            _exitMenuItem = new ToolStripMenuItem("Exit", null, TrayMenu_Exit);
+
+            _trayMenu.Items.Add(_showMenuItem);
+            _trayMenu.Items.Add(new ToolStripSeparator());
+            _trayMenu.Items.Add(_startBBSMenuItem);
+            _trayMenu.Items.Add(_bringToFrontMenuItem);
+            _trayMenu.Items.Add(new ToolStripSeparator());
+            _trayMenu.Items.Add(_configMenuItem);
+            _trayMenu.Items.Add(new ToolStripSeparator());
+            _trayMenu.Items.Add(_exitMenuItem);
+
+            // Create tray icon
+            _trayIcon = new NotifyIcon();
+            _trayIcon.Text = "MBBS Launcher - Idle";
+            _trayIcon.ContextMenuStrip = _trayMenu;
+            _trayIcon.DoubleClick += TrayIcon_DoubleClick;
+
+            // Use form icon for tray icon
+            if (this.Icon != null)
+            {
+                _trayIcon.Icon = this.Icon;
+            }
+
+            // Show tray icon based on settings
+            bool showTrayIcon = _config.GetValue("Settings", "ShowTrayIcon", "true").ToLower() == "true";
+            _trayIcon.Visible = showTrayIcon;
+        }
+
+        private void TrayIcon_DoubleClick(object? sender, EventArgs e)
+        {
+            RestoreFromTray();
+        }
+
+        private void TrayMenu_ShowLauncher(object? sender, EventArgs e)
+        {
+            RestoreFromTray();
+        }
+
+        private void TrayMenu_StartBBS(object? sender, EventArgs e)
+        {
+            // Only start if BBS is not already running
+            if (!ProcessHelper.IsWGServerRunning())
+            {
+                RestoreFromTray();
+                LaunchOption(5); // Option 5 is "Go!"
+            }
+            else
+            {
+                MessageBox.Show(
+                    "WGServer is already running!",
+                    "MBBS Launcher",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+        }
+
+        private void TrayMenu_BringToFront(object? sender, EventArgs e)
+        {
+            if (_runningProcess != null && !_runningProcess.HasExited)
+            {
+                ProcessHelper.BringToForeground(_runningProcess);
+            }
+            else if (!string.IsNullOrEmpty(_runningProgramName))
+            {
+                // Try to find process by name (for wgserver spawned by wgsappgo)
+                var process = ProcessHelper.GetProcess("wgserver");
+                if (process != null)
+                {
+                    ProcessHelper.BringToForeground(process);
+                }
+            }
+        }
+
+        private void TrayMenu_OpenConfig(object? sender, EventArgs e)
+        {
+            RestoreFromTray();
+            OpenConfigEditor();
+        }
+
+        private void TrayMenu_Exit(object? sender, EventArgs e)
+        {
+            // Close the application
+            Application.Exit();
+        }
+
+        private void RestoreFromTray()
+        {
+            this.Show();
+            this.ShowInTaskbar = true;
+            this.WindowState = FormWindowState.Normal;
+            this.Activate();
+            this.BringToFront();
+            this.Invalidate();
+            this.Refresh();
+        }
+
+        private void MinimizeToTray()
+        {
+            bool minimizeToTray = _config.GetValue("Settings", "MinimizeToTray", "true").ToLower() == "true";
+
+            if (minimizeToTray && _trayIcon != null && _trayIcon.Visible)
+            {
+                this.ShowInTaskbar = false;
+                this.Hide();
+
+                // Show balloon tip on first minimize
+                if (_isFirstMinimizeToTray)
+                {
+                    _trayIcon.ShowBalloonTip(
+                        2000,
+                        "MBBS Launcher",
+                        "MBBS Launcher is still running in the system tray.",
+                        ToolTipIcon.Info);
+                    _isFirstMinimizeToTray = false;
+                }
+            }
+        }
+
+        private void UpdateTrayStatus(string? programName, System.Diagnostics.Process? process)
+        {
+            _runningProgramName = programName;
+            _runningProcess = process;
+
+            if (_trayIcon == null) return;
+
+            if (!string.IsNullOrEmpty(programName))
+            {
+                // Program is running
+                _trayIcon.Text = $"MBBS Launcher - Running: {programName}";
+
+                if (_bringToFrontMenuItem != null)
+                {
+                    _bringToFrontMenuItem.Text = $"Bring {programName} to Front";
+                    _bringToFrontMenuItem.Visible = true;
+                }
+
+                if (_startBBSMenuItem != null)
+                {
+                    _startBBSMenuItem.Enabled = false;
+                }
+            }
+            else
+            {
+                // Idle state
+                _trayIcon.Text = "MBBS Launcher - Idle";
+
+                if (_bringToFrontMenuItem != null)
+                {
+                    _bringToFrontMenuItem.Visible = false;
+                }
+
+                if (_startBBSMenuItem != null)
+                {
+                    _startBBSMenuItem.Enabled = true;
+                }
+            }
         }
 
         private void LoadBackgroundImage()
@@ -269,6 +477,94 @@ namespace MBBSLauncher.Forms
             // Force repaint when window is first shown
             this.Invalidate();
             this.Refresh();
+
+            // Check if auto-start BBS is enabled
+            CheckAutoStartBBS();
+        }
+
+        private void CheckAutoStartBBS()
+        {
+            // Check if auto-start is enabled
+            bool autoStartEnabled = _config.GetValue("Settings", "AutoStartBBS", "false").ToLower() == "true";
+            if (!autoStartEnabled) return;
+
+            // Don't auto-start if BBS is already running
+            if (ProcessHelper.IsWGServerRunning()) return;
+
+            // Get delay from config
+            if (!int.TryParse(_config.GetValue("Settings", "AutoStartDelay", "5"), out int delay))
+            {
+                delay = 5;
+            }
+
+            // Clamp delay to reasonable range
+            delay = Math.Max(0, Math.Min(60, delay));
+
+            // Start countdown
+            _autoStartCountdown = delay;
+            _autoStartCancelled = false;
+
+            if (delay == 0)
+            {
+                // Immediate start
+                LaunchBBSAfterCountdown();
+            }
+            else
+            {
+                // Start timer
+                _autoStartTimer?.Start();
+                this.Invalidate(); // Show countdown message
+            }
+        }
+
+        private void AutoStartTimer_Tick(object? sender, EventArgs e)
+        {
+            if (_autoStartCancelled)
+            {
+                _autoStartTimer?.Stop();
+                _autoStartCountdown = 0;
+                this.Invalidate();
+                return;
+            }
+
+            _autoStartCountdown--;
+
+            if (_autoStartCountdown <= 0)
+            {
+                _autoStartTimer?.Stop();
+                LaunchBBSAfterCountdown();
+            }
+            else
+            {
+                this.Invalidate(); // Update countdown display
+            }
+        }
+
+        private void LaunchBBSAfterCountdown()
+        {
+            _autoStartCountdown = 0;
+            this.Invalidate();
+
+            // Launch Option 5 (Go!)
+            LaunchOption(5);
+
+            // Check if quiet mode is enabled
+            bool quietMode = _config.GetValue("Settings", "QuietMode", "false").ToLower() == "true";
+            if (quietMode)
+            {
+                MinimizeToTray();
+            }
+        }
+
+        private void CancelAutoStart()
+        {
+            if (_autoStartCountdown > 0)
+            {
+                _autoStartCancelled = true;
+                _autoStartTimer?.Stop();
+                _autoStartCountdown = 0;
+                this.Invalidate();
+            }
         }
 
         private void MainForm_Paint(object? sender, PaintEventArgs e)
@@ -278,26 +574,96 @@ namespace MBBSLauncher.Forms
                 // Draw background image scaled to fit window while maintaining aspect ratio
                 e.Graphics.DrawImage(_backgroundImage, 0, 0, this.ClientSize.Width, this.ClientSize.Height);
             }
+
+            // Draw auto-start countdown message
+            if (_autoStartCountdown > 0)
+            {
+                DrawAutoStartCountdown(e.Graphics);
+            }
+        }
+
+        /// <summary>
+        /// Draws the auto-start countdown message at the bottom of the screen.
+        /// </summary>
+        private void DrawAutoStartCountdown(Graphics g)
+        {
+            string message = $"Auto-starting BBS in {_autoStartCountdown} second{(_autoStartCountdown != 1 ? "s" : "")}... Press any key or click to cancel";
+
+            // Create font for countdown message
+            using (Font font = new Font("Consolas", 12f, FontStyle.Bold))
+            {
+                SizeF textSize = g.MeasureString(message, font);
+
+                // Position at bottom center of window
+                float x = (this.ClientSize.Width - textSize.Width) / 2;
+                float y = this.ClientSize.Height - textSize.Height - 20;
+
+                // Draw background rectangle for visibility
+                RectangleF bgRect = new RectangleF(x - 10, y - 5, textSize.Width + 20, textSize.Height + 10);
+                using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(220, 0, 0, 128)))
+                {
+                    g.FillRectangle(bgBrush, bgRect);
+                }
+
+                // Draw border
+                using (Pen borderPen = new Pen(Color.FromArgb(255, 0, 255, 255), 2))
+                {
+                    g.DrawRectangle(borderPen, bgRect.X, bgRect.Y, bgRect.Width, bgRect.Height);
+                }
+
+                // Draw text
+                using (SolidBrush textBrush = new SolidBrush(Color.White))
+                {
+                    g.DrawString(message, font, textBrush, x, y);
+                }
+            }
         }
 
         private void MainForm_Resize(object? sender, EventArgs e)
         {
-            // Maintain 16:9 aspect ratio
-            int targetWidth = this.Width;
-            int targetHeight = (int)(targetWidth / 16.0 * 9.0);
+            // Check if we're restoring from minimized
+            bool restoringFromMinimized = (_previousWindowState == FormWindowState.Minimized &&
+                                           this.WindowState == FormWindowState.Normal);
+            _previousWindowState = this.WindowState;
 
-            if (this.Height != targetHeight)
+            // Maintain 16:9 aspect ratio (only when not minimized)
+            if (this.WindowState == FormWindowState.Normal)
             {
-                this.Height = targetHeight;
+                int targetWidth = this.Width;
+                int targetHeight = (int)(targetWidth / 16.0 * 9.0);
+
+                if (this.Height != targetHeight)
+                {
+                    this.Height = targetHeight;
+                }
             }
 
-            this.Invalidate(); // Redraw on resize
+            // If restoring from minimized, force repaint after a brief delay
+            if (restoringFromMinimized)
+            {
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    this.Invalidate(true);
+                    this.Update();
+                });
+            }
+            else
+            {
+                this.Invalidate();
+            }
         }
 
         private void MainForm_MouseClick(object? sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left)
                 return;
+
+            // Cancel auto-start countdown on any click
+            if (_autoStartCountdown > 0)
+            {
+                CancelAutoStart();
+                return;
+            }
 
             // Get click position relative to client area
             float x = e.X / (float)this.ClientSize.Width;
@@ -348,8 +714,128 @@ namespace MBBSLauncher.Forms
             }
         }
 
+        private void MainForm_MouseMove(object? sender, MouseEventArgs e)
+        {
+            // Get position relative to client area (normalized 0.0-1.0)
+            float x = e.X / (float)this.ClientSize.Width;
+            float y = e.Y / (float)this.ClientSize.Height;
+
+            // Show hand cursor when hovering over clickable options
+            int optionAtPos = GetOptionAtPosition(x, y);
+            this.Cursor = (optionAtPos != -1) ? Cursors.Hand : Cursors.Default;
+        }
+
+        private void MainForm_MouseLeave(object? sender, EventArgs e)
+        {
+            this.Cursor = Cursors.Default;
+        }
+
+        /// <summary>
+        /// Determines which option (if any) is at the given normalized position.
+        /// Returns: -1 = no option, 0-99 = option number, -2 = website, -3 = demo BBS, -4 = Discord
+        /// </summary>
+        private int GetOptionAtPosition(float x, float y)
+        {
+            // Check for URL links (upper right corner)
+            // Website: themajorbbs.com
+            if (x >= 0.635f && x <= 0.990f && y >= 0.154f && y <= 0.191f)
+                return -2; // Website URL
+
+            // Demo BBS: bbs.themajorbbs.com
+            if (x >= 0.635f && x <= 0.997f && y >= 0.204f && y <= 0.241f)
+                return -3; // Demo BBS URL
+
+            // Discord: discord.gg/VhRk9xpq30
+            if (x >= 0.635f && x <= 1.003f && y >= 0.247f && y <= 0.284f)
+                return -4; // Discord URL
+
+            // Left column: Options 1, 2, 3, 4
+            if (x >= 0.038f && x <= 0.101f)
+            {
+                if (y >= 0.389f && y <= 0.469f) return 1;
+                if (y >= 0.519f && y <= 0.599f) return 2;
+                if (y >= 0.648f && y <= 0.728f) return 3;
+                if (y >= 0.778f && y <= 0.858f) return 4;
+            }
+
+            // Center column: Options 5, 0
+            if (x >= 0.431f && x <= 0.498f)
+            {
+                if (y >= 0.476f && y <= 0.537f) return 5;
+                if (y >= 0.667f && y <= 0.728f) return 0;
+            }
+
+            // Right column: Options 6, 7, 8, 99
+            if (x >= 0.687f && x <= 0.750f)
+            {
+                if (y >= 0.389f && y <= 0.469f) return 6;
+                if (y >= 0.519f && y <= 0.599f) return 7;
+                if (y >= 0.648f && y <= 0.728f) return 8;
+                if (y >= 0.778f && y <= 0.858f) return 99;
+            }
+
+            return -1; // No option at this position
+        }
+
+        /// <summary>
+        /// Gets the bounding rectangle for a given option number (in normalized coordinates).
+        /// Returns null if the option is not a visual button.
+        /// </summary>
+        private RectangleF? GetOptionBounds(int option)
+        {
+            switch (option)
+            {
+                // URL links
+                case -2: return new RectangleF(0.635f, 0.154f, 0.355f, 0.037f);
+                case -3: return new RectangleF(0.635f, 0.204f, 0.362f, 0.037f);
+                case -4: return new RectangleF(0.635f, 0.247f, 0.368f, 0.037f);
+
+                // Left column
+                case 1: return new RectangleF(0.038f, 0.389f, 0.063f, 0.080f);
+                case 2: return new RectangleF(0.038f, 0.519f, 0.063f, 0.080f);
+                case 3: return new RectangleF(0.038f, 0.648f, 0.063f, 0.080f);
+                case 4: return new RectangleF(0.038f, 0.778f, 0.063f, 0.080f);
+
+                // Center column
+                case 5: return new RectangleF(0.431f, 0.476f, 0.067f, 0.061f);
+                case 0: return new RectangleF(0.431f, 0.667f, 0.067f, 0.061f);
+
+                // Right column
+                case 6: return new RectangleF(0.687f, 0.389f, 0.063f, 0.080f);
+                case 7: return new RectangleF(0.687f, 0.519f, 0.063f, 0.080f);
+                case 8: return new RectangleF(0.687f, 0.648f, 0.063f, 0.080f);
+                case 99: return new RectangleF(0.687f, 0.778f, 0.063f, 0.080f);
+
+                default: return null;
+            }
+        }
+
         private void MainForm_KeyDown(object? sender, KeyEventArgs e)
         {
+            // Cancel auto-start countdown on any key press
+            if (_autoStartCountdown > 0)
+            {
+                CancelAutoStart();
+                e.Handled = true;
+                return;
+            }
+
+            // F1 opens help dialog
+            if (e.KeyCode == Keys.F1)
+            {
+                OpenHelpDialog();
+                e.Handled = true;
+                return;
+            }
+
+            // F2 launches Enable/Disable Modules (WGSDMOD.exe)
+            if (e.KeyCode == Keys.F2)
+            {
+                LaunchModulesEditor();
+                e.Handled = true;
+                return;
+            }
+
             // F12 opens configuration editor
             if (e.KeyCode == Keys.F12)
             {
@@ -376,26 +862,28 @@ namespace MBBSLauncher.Forms
                 return;
             }
 
-            // Arrow keys for future mouse selection feature
-            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right ||
-                e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
-            {
-                // TODO: Implement arrow key selection in future version
-                e.Handled = true;
-            }
-
-            // Enter key launches selected option
-            if (e.KeyCode == Keys.Enter)
-            {
-                LaunchOption(_selectedOption);
-                e.Handled = true;
-            }
-
-            // Escape key exits
+            // Escape key minimizes (to taskbar or tray based on setting)
             if (e.KeyCode == Keys.Escape)
+            {
+                bool escToTray = _config.GetValue("Settings", "EscMinimizesToTray", "false").ToLower() == "true";
+                if (escToTray)
+                {
+                    MinimizeToTray();
+                }
+                else
+                {
+                    this.WindowState = FormWindowState.Minimized;
+                }
+                e.Handled = true;
+                return;
+            }
+
+            // F10 closes the program
+            if (e.KeyCode == Keys.F10)
             {
                 this.Close();
                 e.Handled = true;
+                return;
             }
         }
 
@@ -543,8 +1031,13 @@ namespace MBBSLauncher.Forms
 
             if (launchedProcess != null)
             {
-                // Hide the launcher window
-                this.Hide();
+                // Update tray status to show running program
+                // Use "The Major BBS" for Option 5 instead of "Go!"
+                string trayName = (optionNumber == 5) ? "The Major BBS" : programName;
+                UpdateTrayStatus(trayName, launchedProcess);
+
+                // Minimize to tray instead of just hiding
+                MinimizeToTray();
 
                 // Wait for the process to exit, then show the launcher again
                 System.Threading.Tasks.Task.Run(() =>
@@ -557,6 +1050,16 @@ namespace MBBSLauncher.Forms
 
                         // Then wait for wgserver to exit (if it's running)
                         System.Threading.Thread.Sleep(500); // Brief delay to detect wgserver
+
+                        // Update tray to track wgserver
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            var serverProcess = ProcessHelper.GetProcess("wgserver");
+                            if (serverProcess != null)
+                            {
+                                UpdateTrayStatus("WGServer", serverProcess);
+                            }
+                        });
 
                         while (ProcessHelper.IsProcessRunning("wgserver"))
                         {
@@ -576,12 +1079,11 @@ namespace MBBSLauncher.Forms
                         launchedProcess.WaitForExit();
                     }
 
-                    // Show launcher again
+                    // Clear tray status and show launcher again
                     this.Invoke((MethodInvoker)delegate
                     {
-                        this.Show();
-                        this.Activate();
-                        this.BringToFront();
+                        UpdateTrayStatus(null, null);
+                        RestoreFromTray();
                         this.Invalidate();
                         this.Refresh();
                     });
@@ -598,6 +1100,83 @@ namespace MBBSLauncher.Forms
 
             // Reload config after editing
             _config.LoadConfig();
+        }
+
+        private void OpenHelpDialog()
+        {
+            using (var helpForm = new HelpForm())
+            {
+                helpForm.ShowDialog(this);
+            }
+        }
+
+        private void LaunchModulesEditor()
+        {
+            // Get Module Editor path from config (default to WGSDMOD.exe in BBS path)
+            string bbsPath = _config.GetValue("Paths", "BBSPath", @"C:\BBSV10");
+            string modulesExe = _config.GetValue("Programs", "ModuleEditor", "");
+
+            // Default to WGSDMOD.exe in BBS path if not configured
+            if (string.IsNullOrEmpty(modulesExe))
+            {
+                modulesExe = Path.Combine(bbsPath, "WGSDMOD.exe");
+            }
+
+            if (!File.Exists(modulesExe))
+            {
+                MessageBox.Show(
+                    $"Module Editor not found:\n{modulesExe}\n\nPress F12 to configure the BBS path.",
+                    "File Not Found",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            // Check if already running
+            if (ProcessHelper.IsProcessRunning("WGSDMOD"))
+            {
+                var result = MessageBox.Show(
+                    "Module Editor is already running!\n\nWould you like to bring it to the foreground?",
+                    "Already Running",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
+                if (result == DialogResult.Yes)
+                {
+                    var process = ProcessHelper.GetProcess("WGSDMOD");
+                    if (process != null)
+                    {
+                        ProcessHelper.BringToForeground(process);
+                    }
+                }
+                return;
+            }
+
+            // Launch the module editor
+            var launchedProcess = ProcessHelper.LaunchProgram(modulesExe, bbsPath, null);
+
+            if (launchedProcess != null)
+            {
+                // Update tray status
+                UpdateTrayStatus("Module Editor", launchedProcess);
+
+                // Minimize to tray
+                MinimizeToTray();
+
+                // Wait for exit and restore
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    launchedProcess.WaitForExit();
+
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        UpdateTrayStatus(null, null);
+                        RestoreFromTray();
+                        this.Invalidate();
+                        this.Refresh();
+                    });
+                });
+            }
         }
 
         private void LaunchURL(string url)
