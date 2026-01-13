@@ -1,6 +1,6 @@
 # MBBS Launcher
 
-**Version:** v1.00
+**Version:** v1.10
 
 ## Screenshot
 
@@ -207,7 +207,16 @@ You can edit this file manually or use the built-in configuration editor (F12).
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-### Current Version: v1.00
+### Current Version: v1.10
+- Fixed version information in file properties to correctly display v1.10.0.0
+- System tray support with minimize to tray functionality
+- Auto-start with Windows option
+- Quick access to website, demo BBS, and Discord from system tray
+- All links now clickable in the UI
+- System tray icon with context menu
+
+### Previous Versions
+#### v1.00 - Initial Release
 - Initial release
 - Classic retro DOS-style interface with authentic MBBS look
 - Configurable program launcher (Options 1-8, 99, and 0 for exit)
@@ -244,4 +253,4 @@ This application was created with love for The Major BBS community. The Major BB
 
 ---
 
-**MBBS Launcher v1.00** | Created with Love in Iowa | © 2026 Mark Laudenbach
+**MBBS Launcher v1.10** | Created with Love in Iowa | © 2026 Mark Laudenbach

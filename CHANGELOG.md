@@ -9,6 +9,32 @@ The format for change tracking: `YY.MM.DD.X - HH:MMAM/PM`
 - X = Change number for that day (starts at 1, increments with each change)
 - HH:MM = Time in 12-hour format with AM/PM
 
+## [v1.10] - 2026-01-13
+
+### 26.01.13.1 - 12:00PM
+**Version Info Fix & Feature Update**
+
+#### Fixed
+- Updated version information in file properties to correctly display v1.10.0.0
+- Previously, Windows file properties showed v1.0.0.0 instead of the actual version
+
+#### Added (from v1.10 development)
+- System tray support with minimize to tray functionality
+- Auto-start with Windows option in system tray menu
+- Quick access to website, demo BBS, and Discord from system tray context menu
+- All links now clickable in the UI
+- System tray icon with comprehensive context menu
+- Minimize to tray on window minimize
+- Double-click tray icon to show/hide main window
+
+#### Technical Details
+- Updated AssemblyVersion to 1.10.0.0
+- Updated FileVersion to 1.10.0.0
+- Updated ProductVersion to 1.10.0
+- Maintenance release focused on version display accuracy
+
+---
+
 ## [v1.00] - 2026-01-07
 
 ### 26.01.07.1 - 06:00PM
