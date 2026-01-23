@@ -4,7 +4,7 @@
 
 ## Screenshot
 
-![MBBS Launcher Screenshot](images/MBBS%20Launcher%20Screenshot.png)
+![MBBS Launcher Screenshot](images/1280x720%20SS.gif)
 **Created by:** Mark Laudenbach
 **Created with Love in:** Iowa
 **License:** MIT
