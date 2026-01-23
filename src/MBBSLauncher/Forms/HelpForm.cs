@@ -3,10 +3,11 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/HelpForm.cs
-// Version: v1.10
+// Version: v1.20
 //
 // Change History:
 // 26.01.12.1 - Initial creation
+// 26.01.23.1 - Updated for v1.20 - Added Ghost3 info, increased font size
 
 using System;
 using System.Drawing;
@@ -28,8 +29,8 @@ namespace MBBSLauncher.Forms
         private void InitializeComponent()
         {
             this.Text = $"{Program.APP_NAME} {Program.APP_VERSION} - Help";
-            this.Size = new Size(700, 550);
-            this.MinimumSize = new Size(500, 400);
+            this.Size = new Size(820, 600);
+            this.MinimumSize = new Size(600, 400);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.MaximizeBox = true;
@@ -44,9 +45,10 @@ namespace MBBSLauncher.Forms
                 ReadOnly = true,
                 BackColor = Color.FromArgb(0, 0, 128),
                 ForeColor = Color.White,
-                Font = new Font("Consolas", 10f),
+                Font = new Font("Consolas", 11f),
                 BorderStyle = BorderStyle.None,
-                ScrollBars = RichTextBoxScrollBars.Vertical
+                ScrollBars = RichTextBoxScrollBars.Vertical,
+                WordWrap = false
             };
 
             // Close button
@@ -90,7 +92,7 @@ namespace MBBSLauncher.Forms
         {
             string helpContent = @"
 ================================================================================
-                    MBBS LAUNCHER v1.10 - HELP & DOCUMENTATION
+                    MBBS LAUNCHER v1.20 - HELP & DOCUMENTATION
 ================================================================================
 
   Created by Mark Laudenbach with Love in Iowa
@@ -170,14 +172,37 @@ namespace MBBSLauncher.Forms
 
   The launcher can automatically start the BBS when it opens.
 
-  To enable, edit MBBSLauncher.ini and set:
+  To enable, press F12 and configure:
     AutoStartBBS=true
     AutoStartDelay=5      (seconds to wait, allows cancellation)
     QuietMode=false       (set true to minimize to tray after start)
 
   During countdown:
   - Press ANY KEY or CLICK anywhere to cancel auto-start
-  - Countdown displays at bottom of screen
+  - Countdown displays at bottom of screen (blue/cyan theme)
+
+--------------------------------------------------------------------------------
+                          GHOST3 AUTO-LAUNCH
+--------------------------------------------------------------------------------
+
+  Ghost3 is a program that allows The Major BBS to connect to old school
+  BBS doors. The launcher can automatically start Ghost3 after the BBS
+  launches.
+
+  To enable, press F12 and configure:
+    Ghost3Enabled=true
+    Ghost3Path=C:\Ghost3\Ghost3.exe  (adjust to your installation)
+    Ghost3Delay=60        (seconds to wait after BBS starts)
+
+  How it works:
+  - Launch the BBS (Option 5 - Go!)
+  - Countdown begins after BBS starts successfully
+  - Press ANY KEY or CLICK anywhere to cancel Ghost3 launch
+  - Countdown displays at bottom of screen (green theme)
+  - Ghost3 launches independently after delay expires
+
+  Ghost3 runs separately from the launcher - it does not need to be
+  monitored or managed. You can close the launcher while Ghost3 runs.
 
 --------------------------------------------------------------------------------
                            CONFIGURATION

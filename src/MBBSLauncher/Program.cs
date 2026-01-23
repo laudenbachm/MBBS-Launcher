@@ -3,12 +3,13 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Program.cs
-// Version: v1.10
+// Version: v1.20
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
 // 26.01.07.3 - 07:15PM - Added global exception handling and error logging
 // 26.01.12.1 - Bumped version to v1.10
+// 26.01.23.1 - Bumped version to v1.20 - Added Ghost3 support
 
 using System;
 using System.IO;
@@ -19,7 +20,7 @@ namespace MBBSLauncher
 {
     internal static class Program
     {
-        public const string APP_VERSION = "v1.10";
+        public const string APP_VERSION = "v1.20";
         public const string APP_NAME = "MBBS Launcher";
         public const string AUTHOR = "Mark Laudenbach";
         public const string TAGLINE = "Created with Love in Iowa";

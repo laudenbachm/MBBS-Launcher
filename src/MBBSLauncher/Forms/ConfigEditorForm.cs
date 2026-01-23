@@ -3,11 +3,12 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/ConfigEditorForm.cs
-// Version: v1.10
+// Version: v1.20
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
 // 26.01.12.1 - Added Auto-Start BBS settings and F2 Module Editor option
+// 26.01.23.1 - Added Ghost3 support settings
 
 using System;
 using System.Drawing;
@@ -28,6 +29,11 @@ namespace MBBSLauncher.Forms
         private NumericUpDown? _autoStartDelayNumeric;
         private CheckBox? _quietModeCheckBox;
 
+        // Ghost3 controls
+        private CheckBox? _ghost3EnabledCheckBox;
+        private TextBox? _ghost3PathTextBox;
+        private NumericUpDown? _ghost3DelayNumeric;
+
         // Behavior settings
         private CheckBox? _escToTrayCheckBox;
 
@@ -46,36 +52,43 @@ namespace MBBSLauncher.Forms
         {
             this.Text = $"{Program.APP_NAME} {Program.APP_VERSION} - Configuration Editor";
             this.Size = new Size(700, 800);
+            this.MinimumSize = new Size(650, 600);
             this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
             this.MinimizeBox = false;
 
             // Load application icon
             LoadApplicationIcon();
 
-            int yPos = 20;
+            // Top panel containing header and buttons
+            Panel topPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 90,
+                BackColor = SystemColors.Control,
+                Padding = new Padding(10)
+            };
 
             // Header section - Line 1: MBBS Launcher version
             Label versionLabel = new Label
             {
                 Text = $"{Program.APP_NAME} {Program.APP_VERSION}",
-                Location = new Point(20, yPos),
-                Size = new Size(650, 25),
+                Location = new Point(15, 15),
+                Size = new Size(450, 25),
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 102, 204),
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            this.Controls.Add(versionLabel);
-            yPos += 28;
+            topPanel.Controls.Add(versionLabel);
 
             // Header section - Line 2: GitHub link
             LinkLabel githubLink = new LinkLabel
             {
                 Text = Program.GITHUB_URL,
-                Location = new Point(20, yPos),
-                Size = new Size(650, 20),
-                TextAlign = ContentAlignment.MiddleCenter,
+                Location = new Point(15, 40),
+                Size = new Size(450, 20),
+                TextAlign = ContentAlignment.MiddleLeft,
                 LinkColor = Color.FromArgb(0, 102, 204)
             };
             githubLink.LinkClicked += (s, e) =>
@@ -94,33 +107,69 @@ namespace MBBSLauncher.Forms
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
-            this.Controls.Add(githubLink);
-            yPos += 25;
+            topPanel.Controls.Add(githubLink);
 
             // Header section - Line 3: Created with Love by...
             Label authorLabel = new Label
             {
                 Text = $"Created with Love \u2764 by {Program.AUTHOR} in Iowa",
-                Location = new Point(20, yPos),
-                Size = new Size(650, 22),
+                Location = new Point(15, 62),
+                Size = new Size(450, 22),
                 Font = new Font("Segoe UI", 9.5f),
                 ForeColor = Color.FromArgb(220, 20, 60), // Crimson red
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            this.Controls.Add(authorLabel);
-            yPos += 35;
+            topPanel.Controls.Add(authorLabel);
+
+            // Save and Cancel buttons - simple fixed positions that work
+            Button saveBtn = new Button
+            {
+                Text = "Save",
+                Size = new Size(80, 28),
+                Location = new Point(500, 30),
+                DialogResult = DialogResult.OK
+            };
+            saveBtn.Click += SaveButton_Click;
+            topPanel.Controls.Add(saveBtn);
+
+            Button cancelBtn = new Button
+            {
+                Text = "Cancel",
+                Size = new Size(80, 28),
+                Location = new Point(590, 30),
+                DialogResult = DialogResult.Cancel
+            };
+            topPanel.Controls.Add(cancelBtn);
+
+            this.Controls.Add(topPanel);
+
+            this.AcceptButton = saveBtn;
+            this.CancelButton = cancelBtn;
+
+            int yPos = 100;
 
             // Auto-launch at startup checkbox
             _autoLaunchCheckBox = new CheckBox
             {
                 Text = "Launch MBBS Launcher automatically at Windows startup",
-                Location = new Point(20, yPos),
-                Size = new Size(650, 25),
+                Location = new Point(40, yPos),
+                Size = new Size(640, 25),
                 Font = new Font("Segoe UI", 9),
                 Checked = false
             };
             this.Controls.Add(_autoLaunchCheckBox);
             yPos += 30;
+
+            _escToTrayCheckBox = new CheckBox
+            {
+                Text = "ESC key minimizes to system tray (instead of taskbar)",
+                Location = new Point(40, yPos),
+                Size = new Size(640, 25),
+                Font = new Font("Segoe UI", 9),
+                Checked = false
+            };
+            this.Controls.Add(_escToTrayCheckBox);
+            yPos += 35;
 
             // Auto-Start BBS section
             Label autoStartLabel = new Label
@@ -179,17 +228,81 @@ namespace MBBSLauncher.Forms
                 Checked = false
             };
             this.Controls.Add(_quietModeCheckBox);
-            yPos += 30;
+            yPos += 35;
 
-            _escToTrayCheckBox = new CheckBox
+            // Ghost3 section
+            Label ghost3Label = new Label
             {
-                Text = "ESC key minimizes to system tray (instead of taskbar)",
+                Text = "Ghost3 Auto-Launch Settings:",
+                Location = new Point(20, yPos),
+                Size = new Size(650, 20),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            this.Controls.Add(ghost3Label);
+            yPos += 25;
+
+            _ghost3EnabledCheckBox = new CheckBox
+            {
+                Text = "Auto-launch Ghost3 after BBS starts (for BBS door support)",
                 Location = new Point(40, yPos),
-                Size = new Size(400, 25),
+                Size = new Size(640, 25),
                 Font = new Font("Segoe UI", 9),
                 Checked = false
             };
-            this.Controls.Add(_escToTrayCheckBox);
+            this.Controls.Add(_ghost3EnabledCheckBox);
+            yPos += 30;
+
+            Label ghost3PathLabel = new Label
+            {
+                Text = "Path:",
+                Location = new Point(40, yPos),
+                Size = new Size(40, 20)
+            };
+            this.Controls.Add(ghost3PathLabel);
+
+            _ghost3PathTextBox = new TextBox
+            {
+                Location = new Point(80, yPos),
+                Size = new Size(220, 20),
+                Tag = "Ghost3Path"
+            };
+            this.Controls.Add(_ghost3PathTextBox);
+
+            Button browseGhost3Btn = new Button
+            {
+                Text = "Browse...",
+                Location = new Point(310, yPos - 2),
+                Size = new Size(80, 24),
+                Tag = _ghost3PathTextBox
+            };
+            browseGhost3Btn.Click += BrowseProgramButton_Click;
+            this.Controls.Add(browseGhost3Btn);
+
+            Label ghost3DelayLabel = new Label
+            {
+                Text = "Delay:",
+                Location = new Point(400, yPos + 3),
+                Size = new Size(45, 20)
+            };
+            this.Controls.Add(ghost3DelayLabel);
+
+            _ghost3DelayNumeric = new NumericUpDown
+            {
+                Location = new Point(445, yPos),
+                Size = new Size(50, 25),
+                Minimum = 0,
+                Maximum = 300,
+                Value = 60
+            };
+            this.Controls.Add(_ghost3DelayNumeric);
+
+            Label ghost3SecondsLabel = new Label
+            {
+                Text = "seconds",
+                Location = new Point(500, yPos + 3),
+                Size = new Size(60, 20)
+            };
+            this.Controls.Add(ghost3SecondsLabel);
             yPos += 35;
 
             // Paths section
@@ -384,29 +497,6 @@ namespace MBBSLauncher.Forms
             scrollPanel.Controls.Add(browseF2Btn);
 
             yPos += 310;
-
-            // Buttons
-            Button saveBtn = new Button
-            {
-                Text = "Save",
-                Location = new Point(480, yPos),
-                Size = new Size(90, 30),
-                DialogResult = DialogResult.OK
-            };
-            saveBtn.Click += SaveButton_Click;
-            this.Controls.Add(saveBtn);
-
-            Button cancelBtn = new Button
-            {
-                Text = "Cancel",
-                Location = new Point(580, yPos),
-                Size = new Size(90, 30),
-                DialogResult = DialogResult.Cancel
-            };
-            this.Controls.Add(cancelBtn);
-
-            this.AcceptButton = saveBtn;
-            this.CancelButton = cancelBtn;
         }
 
         private void LoadConfiguration()
@@ -458,6 +548,26 @@ namespace MBBSLauncher.Forms
             {
                 string escToTrayValue = _config.GetValue("Settings", "EscMinimizesToTray", "false");
                 _escToTrayCheckBox.Checked = escToTrayValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // Load Ghost3 settings
+            if (_ghost3EnabledCheckBox != null)
+            {
+                string ghost3EnabledValue = _config.GetValue("Settings", "Ghost3Enabled", "false");
+                _ghost3EnabledCheckBox.Checked = ghost3EnabledValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (_ghost3PathTextBox != null)
+            {
+                _ghost3PathTextBox.Text = _config.GetValue("Settings", "Ghost3Path", @"C:\Ghost3\Ghost3.exe");
+            }
+
+            if (_ghost3DelayNumeric != null)
+            {
+                if (int.TryParse(_config.GetValue("Settings", "Ghost3Delay", "60"), out int ghost3Delay))
+                {
+                    _ghost3DelayNumeric.Value = Math.Max(0, Math.Min(300, ghost3Delay));
+                }
             }
 
             // Load F2 Module Editor path
@@ -555,6 +665,16 @@ namespace MBBSLauncher.Forms
 
             if (_escToTrayCheckBox != null)
                 _config.SetValue("Settings", "EscMinimizesToTray", _escToTrayCheckBox.Checked.ToString().ToLower());
+
+            // Save Ghost3 settings
+            if (_ghost3EnabledCheckBox != null)
+                _config.SetValue("Settings", "Ghost3Enabled", _ghost3EnabledCheckBox.Checked.ToString().ToLower());
+
+            if (_ghost3PathTextBox != null)
+                _config.SetValue("Settings", "Ghost3Path", _ghost3PathTextBox.Text);
+
+            if (_ghost3DelayNumeric != null)
+                _config.SetValue("Settings", "Ghost3Delay", ((int)_ghost3DelayNumeric.Value).ToString());
 
             // Save auto-launch setting and update Windows startup
             if (_autoLaunchCheckBox != null)

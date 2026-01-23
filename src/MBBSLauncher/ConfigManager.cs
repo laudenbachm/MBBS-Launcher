@@ -3,12 +3,13 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: ConfigManager.cs
-// Version: v1.10
+// Version: v1.20
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
 // 26.01.12.1 - Added system tray configuration options
 // 26.01.12.2 - Added AutoStartBBS, AutoStartDelay, QuietMode settings
+// 26.01.23.1 - Added Ghost3 support settings
 
 using System;
 using System.Collections.Generic;
@@ -157,7 +158,10 @@ namespace MBBSLauncher
                 { "EscMinimizesToTray", "false" }, // ESC minimizes to taskbar by default, true = minimize to tray
                 { "AutoStartBBS", "false" },       // OFF by default - auto-launch BBS when launcher starts
                 { "AutoStartDelay", "5" },         // Seconds to wait before auto-starting (allows cancel)
-                { "QuietMode", "false" }           // Minimize to tray after auto-start
+                { "QuietMode", "false" },          // Minimize to tray after auto-start
+                { "Ghost3Enabled", "false" },      // OFF by default - auto-launch Ghost3 after BBS starts
+                { "Ghost3Path", @"C:\Ghost3\Ghost3.exe" }, // Default Ghost3 installation path
+                { "Ghost3Delay", "60" }            // Seconds to wait after BBS starts before launching Ghost3
             };
 
             // Programs section

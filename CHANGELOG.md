@@ -9,6 +9,61 @@ The format for change tracking: `YY.MM.DD.X - HH:MMAM/PM`
 - X = Change number for that day (starts at 1, increments with each change)
 - HH:MM = Time in 12-hour format with AM/PM
 
+## [v1.20] - 2026-01-23
+
+### 26.01.23.1 - 01:30PM
+**Ghost3 Support & UI Improvements**
+
+#### Added
+- **Ghost3 Auto-Launch Support**
+  - Auto-launch Ghost3 after The Major BBS starts (configurable delay)
+  - Ghost3 path configuration with browse dialog
+  - Countdown timer (0-300 seconds, default 60) with visual feedback
+  - Green-themed countdown display (distinguishable from BBS countdown)
+  - Press any key or click to cancel Ghost3 launch
+  - Independent operation - no process monitoring required
+- **Updated Background Image**
+  - New launcher screen with updated bottom text
+  - "Run The Major BBS: begin taking calls and serving users."
+- **Enhanced Help Dialog (F1)**
+  - Increased font size from 10pt to 11pt for better readability
+  - Disabled word wrapping for proper text formatting
+  - Wider window (820px from 700px) to accommodate larger font
+  - Added comprehensive Ghost3 documentation section
+  - Updated to reflect v1.20 features
+- **Configuration Window Improvements**
+  - Now fully resizable (was fixed dialog)
+  - Added maximize button for flexibility
+  - Minimum size set to 650x600px for low-resolution displays
+  - Works perfectly on 1024x768 monitors
+  - Clean header layout with version info and author credit
+  - Save/Cancel buttons repositioned for better visibility
+
+#### Changed
+- Ghost3 settings layout matches BBS auto-start style
+- All checkboxes aligned consistently at x=40 margin
+- Configuration editor header redesigned for cleaner appearance
+- Form layouts optimized for various screen resolutions
+
+#### Fixed
+- Configuration editor Save/Cancel button visibility issues
+- Button positioning in resizable configuration window
+- Form resize behavior improvements
+- Checkbox alignment consistency
+
+#### Technical Details
+- Updated version to 1.20.0.0 in all file properties
+- Ghost3 settings added to ConfigManager.cs default configuration
+- New configuration options:
+  - `Ghost3Enabled` (default: false)
+  - `Ghost3Path` (default: C:\Ghost3\Ghost3.exe)
+  - `Ghost3Delay` (default: 60 seconds)
+- Ghost3 countdown timer integrated into MainForm.cs
+- Help content expanded with Ghost3 usage instructions
+- Background image resource updated (embedded in executable)
+
+---
+
 ## [v1.10] - 2026-01-13
 
 ### 26.01.13.1 - 12:00PM

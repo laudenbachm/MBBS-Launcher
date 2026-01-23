@@ -3,7 +3,7 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/MainForm.cs
-// Version: v1.10
+// Version: v1.20
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
@@ -12,6 +12,7 @@
 // 26.01.12.2 - Added mouse navigation with hover effects and cursor changes
 // 26.01.12.3 - Added auto-start BBS on startup with countdown and cancel
 // 26.01.12.4 - Added F1 Help dialog and F2 Module Editor launcher
+// 26.01.23.1 - Added Ghost3 auto-launch support with countdown
 
 using System;
 using System.Drawing;
@@ -46,6 +47,11 @@ namespace MBBSLauncher.Forms
         private System.Windows.Forms.Timer? _autoStartTimer;
         private int _autoStartCountdown = 0;
         private bool _autoStartCancelled = false;
+
+        // Ghost3 countdown
+        private System.Windows.Forms.Timer? _ghost3Timer;
+        private int _ghost3Countdown = 0;
+        private bool _ghost3Cancelled = false;
 
         // Track window state for restore detection
         private FormWindowState _previousWindowState = FormWindowState.Normal;
@@ -134,6 +140,11 @@ namespace MBBSLauncher.Forms
             _autoStartTimer = new System.Windows.Forms.Timer();
             _autoStartTimer.Interval = 1000; // 1 second interval
             _autoStartTimer.Tick += AutoStartTimer_Tick;
+
+            // Initialize Ghost3 countdown timer
+            _ghost3Timer = new System.Windows.Forms.Timer();
+            _ghost3Timer.Interval = 1000; // 1 second interval
+            _ghost3Timer.Tick += Ghost3Timer_Tick;
 
             // Handle keyboard input
             this.KeyDown += MainForm_KeyDown;
@@ -567,6 +578,99 @@ namespace MBBSLauncher.Forms
             }
         }
 
+        private void Ghost3Timer_Tick(object? sender, EventArgs e)
+        {
+            if (_ghost3Cancelled)
+            {
+                _ghost3Timer?.Stop();
+                _ghost3Countdown = 0;
+                this.Invalidate();
+                return;
+            }
+
+            _ghost3Countdown--;
+
+            if (_ghost3Countdown <= 0)
+            {
+                _ghost3Timer?.Stop();
+                LaunchGhost3();
+            }
+            else
+            {
+                this.Invalidate(); // Update countdown display
+            }
+        }
+
+        private void StartGhost3Countdown()
+        {
+            // Check if Ghost3 is enabled
+            bool ghost3Enabled = _config.GetValue("Settings", "Ghost3Enabled", "false").ToLower() == "true";
+            if (!ghost3Enabled) return;
+
+            // Get delay from config
+            if (!int.TryParse(_config.GetValue("Settings", "Ghost3Delay", "60"), out int delay))
+            {
+                delay = 60;
+            }
+
+            // Clamp delay to reasonable range
+            delay = Math.Max(0, Math.Min(300, delay));
+
+            // Start countdown
+            _ghost3Countdown = delay;
+            _ghost3Cancelled = false;
+
+            if (delay == 0)
+            {
+                // Immediate launch
+                LaunchGhost3();
+            }
+            else
+            {
+                // Start timer
+                _ghost3Timer?.Start();
+                this.Invalidate(); // Show countdown message
+            }
+        }
+
+        private void LaunchGhost3()
+        {
+            _ghost3Countdown = 0;
+            this.Invalidate();
+
+            string ghost3Path = _config.GetValue("Settings", "Ghost3Path", @"C:\Ghost3\Ghost3.exe");
+
+            if (string.IsNullOrWhiteSpace(ghost3Path))
+            {
+                return; // Silently skip if not configured
+            }
+
+            if (!File.Exists(ghost3Path))
+            {
+                MessageBox.Show(
+                    $"Ghost3 not found:\n{ghost3Path}\n\nPress F12 to update the Ghost3 path in configuration.",
+                    "Ghost3 Not Found",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Launch Ghost3 without monitoring
+            string? workingDir = Path.GetDirectoryName(ghost3Path);
+            ProcessHelper.LaunchProgram(ghost3Path, workingDir, null);
+        }
+
+        private void CancelGhost3()
+        {
+            if (_ghost3Countdown > 0)
+            {
+                _ghost3Cancelled = true;
+                _ghost3Timer?.Stop();
+                _ghost3Countdown = 0;
+                this.Invalidate();
+            }
+        }
+
         private void MainForm_Paint(object? sender, PaintEventArgs e)
         {
             if (_backgroundImage != null)
@@ -579,6 +683,12 @@ namespace MBBSLauncher.Forms
             if (_autoStartCountdown > 0)
             {
                 DrawAutoStartCountdown(e.Graphics);
+            }
+
+            // Draw Ghost3 countdown message
+            if (_ghost3Countdown > 0)
+            {
+                DrawGhost3Countdown(e.Graphics);
             }
         }
 
@@ -607,6 +717,43 @@ namespace MBBSLauncher.Forms
 
                 // Draw border
                 using (Pen borderPen = new Pen(Color.FromArgb(255, 0, 255, 255), 2))
+                {
+                    g.DrawRectangle(borderPen, bgRect.X, bgRect.Y, bgRect.Width, bgRect.Height);
+                }
+
+                // Draw text
+                using (SolidBrush textBrush = new SolidBrush(Color.White))
+                {
+                    g.DrawString(message, font, textBrush, x, y);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws the Ghost3 countdown message at the bottom of the screen.
+        /// </summary>
+        private void DrawGhost3Countdown(Graphics g)
+        {
+            string message = $"Launching Ghost3 in {_ghost3Countdown} second{(_ghost3Countdown != 1 ? "s" : "")}... Press any key or click to cancel";
+
+            // Create font for countdown message
+            using (Font font = new Font("Consolas", 12f, FontStyle.Bold))
+            {
+                SizeF textSize = g.MeasureString(message, font);
+
+                // Position at bottom center of window
+                float x = (this.ClientSize.Width - textSize.Width) / 2;
+                float y = this.ClientSize.Height - textSize.Height - 20;
+
+                // Draw background rectangle for visibility (use green theme for Ghost3)
+                RectangleF bgRect = new RectangleF(x - 10, y - 5, textSize.Width + 20, textSize.Height + 10);
+                using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(220, 0, 100, 0)))
+                {
+                    g.FillRectangle(bgBrush, bgRect);
+                }
+
+                // Draw border (green theme)
+                using (Pen borderPen = new Pen(Color.FromArgb(255, 0, 255, 0), 2))
                 {
                     g.DrawRectangle(borderPen, bgRect.X, bgRect.Y, bgRect.Width, bgRect.Height);
                 }
@@ -662,6 +809,13 @@ namespace MBBSLauncher.Forms
             if (_autoStartCountdown > 0)
             {
                 CancelAutoStart();
+                return;
+            }
+
+            // Cancel Ghost3 countdown on any click
+            if (_ghost3Countdown > 0)
+            {
+                CancelGhost3();
                 return;
             }
 
@@ -816,6 +970,14 @@ namespace MBBSLauncher.Forms
             if (_autoStartCountdown > 0)
             {
                 CancelAutoStart();
+                e.Handled = true;
+                return;
+            }
+
+            // Cancel Ghost3 countdown on any key press
+            if (_ghost3Countdown > 0)
+            {
+                CancelGhost3();
                 e.Handled = true;
                 return;
             }
@@ -1038,6 +1200,16 @@ namespace MBBSLauncher.Forms
 
                 // Minimize to tray instead of just hiding
                 MinimizeToTray();
+
+                // For Option 5 (BBS), start Ghost3 countdown after BBS launches
+                if (optionNumber == 5)
+                {
+                    // Start Ghost3 countdown in the UI thread
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        StartGhost3Countdown();
+                    });
+                }
 
                 // Wait for the process to exit, then show the launcher again
                 System.Threading.Tasks.Task.Run(() =>
