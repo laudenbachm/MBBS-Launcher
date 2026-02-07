@@ -104,8 +104,9 @@ namespace MBBSLauncher
         /// <param name="programPath">Full path to the executable</param>
         /// <param name="workingDirectory">Working directory for the process</param>
         /// <param name="arguments">Command-line arguments for the program</param>
+        /// <param name="minimized">Whether to launch minimized (doesn't steal focus)</param>
         /// <returns>The launched Process object or null if failed</returns>
-        public static Process? LaunchProgram(string programPath, string? workingDirectory = null, string? arguments = null)
+        public static Process? LaunchProgram(string programPath, string? workingDirectory = null, string? arguments = null, bool minimized = false)
         {
             try
             {
@@ -120,6 +121,12 @@ namespace MBBSLauncher
 
                 if (!string.IsNullOrEmpty(workingDirectory))
                     startInfo.WorkingDirectory = workingDirectory;
+
+                // Launch minimized if requested (useful for auto-launch programs)
+                if (minimized)
+                {
+                    startInfo.WindowStyle = ProcessWindowStyle.Minimized;
+                }
 
                 return Process.Start(startInfo);
             }
@@ -141,6 +148,83 @@ namespace MBBSLauncher
         public static bool IsWGServerRunning()
         {
             return IsProcessRunning("wgserver");
+        }
+
+        /// <summary>
+        /// Force-kills all instances of a process and closes any error dialogs.
+        /// Use with caution - only for cleanup after crashes.
+        /// </summary>
+        /// <param name="processName">Name of the process without .exe extension</param>
+        /// <returns>Number of processes killed</returns>
+        public static int ForceKillProcess(string processName)
+        {
+            int killedCount = 0;
+
+            try
+            {
+                // Remove .exe extension if present
+                if (processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    processName = processName.Substring(0, processName.Length - 4);
+
+                Process[] processes = Process.GetProcessesByName(processName);
+
+                foreach (var process in processes)
+                {
+                    try
+                    {
+                        // Close any dialogs for this process first
+                        Core.DialogCloser.CloseDialogsForProcess(process.Id);
+
+                        // Give it a moment to close gracefully
+                        System.Threading.Thread.Sleep(100);
+
+                        // Force kill if still running
+                        if (!process.HasExited)
+                        {
+                            process.Kill();
+                            killedCount++;
+                        }
+
+                        process.Dispose();
+                    }
+                    catch
+                    {
+                        // Continue with other processes if one fails
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore errors - this is cleanup code
+            }
+
+            return killedCount;
+        }
+
+        /// <summary>
+        /// Cleans up all BBS-related processes and dialogs.
+        /// Useful before restarting the BBS.
+        /// </summary>
+        public static void CleanupBBSProcesses()
+        {
+            try
+            {
+                // Close all BBS error dialogs
+                Core.DialogCloser.CloseAllBBSDialogs();
+
+                // Small delay
+                System.Threading.Thread.Sleep(200);
+
+                // Force kill any lingering wgserver processes
+                ForceKillProcess("wgserver");
+
+                // Force kill any lingering wgsappgo processes
+                ForceKillProcess("wgsappgo");
+            }
+            catch
+            {
+                // Ignore errors - this is cleanup code
+            }
         }
     }
 }

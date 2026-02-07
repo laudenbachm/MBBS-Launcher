@@ -3,19 +3,21 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: ConfigManager.cs
-// Version: v1.20
+// Version: v1.5
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
 // 26.01.12.1 - Added system tray configuration options
 // 26.01.12.2 - Added AutoStartBBS, AutoStartDelay, QuietMode settings
 // 26.01.23.1 - Added Ghost3 support settings
+// 26.02.07.1 - v1.5: Added multiple auto-launch programs support, using Models namespace
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using MBBSLauncher.Models;
 
 namespace MBBSLauncher
 {
@@ -270,6 +272,19 @@ namespace MBBSLauncher
             {
                 // If folder search completely fails, just skip it
             }
+        }
+
+        /// <summary>
+        /// Gets the configuration file path.
+        /// </summary>
+        public string ConfigFilePath => _configFilePath;
+
+        /// <summary>
+        /// Checks if a section exists in the configuration.
+        /// </summary>
+        public bool HasSection(string sectionName)
+        {
+            return _configData.ContainsKey(sectionName);
         }
     }
 }

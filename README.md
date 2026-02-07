@@ -1,6 +1,6 @@
 # MBBS Launcher
 
-**Version:** v1.20
+**Version:** v1.5
 
 ## Screenshot
 
@@ -21,34 +21,58 @@ This was coded by a guy who Googles "how to exit vim" every single time. There W
 
 ## Features
 
+### Core Features
 - **Retro DOS-Style Interface** - Classic blue screen design reminiscent of the original Major BBS v6.25 launcher
 - **Easy Program Access** - Launch BBS utilities and tools with keyboard (0-9, 99) or mouse clicks
 - **Clickable Menu Options** - Click any menu button with your mouse or use traditional keyboard input
 - **Configurable Menu** - Customize program paths and menu options via F12 configuration editor
-- **Auto-Launch at Startup** - Optional Windows startup integration (disabled by default)
 - **Smart Process Management** - Automatically detects if programs are already running and brings them to foreground
 - **WGServer Protection** - Prevents conflicts by detecting if the BBS server is already running
 - **Auto-Hide/Show** - Launcher hides when programs run and reappears when they close
 - **16:9 Aspect Ratio** - Modern scalable window design while maintaining the classic look
-- **Single-File Deployment** - All resources embedded in executable, no external files needed
 - **INI Configuration** - Simple text-based configuration file for easy editing
-- **Custom Icon Support** - Professional Windows application icon in taskbar and title bar
+
+### v1.5 New Features
+- **🎯 Self-Contained Deployment** - No .NET runtime installation required!
+- **🚫 Single Instance Enforcement** - Prevents multiple launcher instances from running
+- **📑 5-Tab Configuration Window** - Clean, organized settings interface
+- **🚀 Multiple Auto-Launch Programs** - Launch unlimited programs after BBS starts with independent timers
+- **🔽 Launch Minimized** - Programs can start minimized to prevent focus stealing
+- **⬆️ Automatic Config Migration** - Seamlessly upgrades v1.20 configurations
+- **📝 Audit Log with Rotation** - Diagnostic logs that auto-rotate at 500 KB
+- **🎨 System Tray Integration** - Minimize to tray with context menu
 
 ## System Requirements
 
 - **Operating System:** Windows 7 or later, Windows Server 2012 or later
-- **Architecture:** 32-bit (x86)
-- **.NET Runtime:** .NET 6.0 Runtime (Windows Desktop)
-- **Disk Space:** ~5 MB
+- **Architecture:** 32-bit (x86) - runs on both 32-bit and 64-bit Windows
+- **.NET Runtime:** **None required!** (Self-contained build)
+- **Disk Space:** ~65 MB
+
+### 📦 About the File Size
+
+**Why is v1.5 larger than v1.20?**
+
+v1.5 is a **self-contained build** that includes the entire .NET 8.0 runtime embedded in the executable. This means:
+
+- ✅ **Zero dependencies** - No .NET runtime installation required
+- ✅ **Works on any Windows PC** - Even systems without .NET installed
+- ✅ **Simpler installation** - Just download and run
+- ✅ **Better compatibility** - Guaranteed to work regardless of system configuration
+
+**File size comparison:**
+- **v1.20:** 1.3 MB + 150 MB .NET 6.0 runtime (required separately) = **151 MB total**
+- **v1.5:** 65 MB (everything included) = **65 MB total**
+
+Even though the single file is larger, you're actually using **less disk space overall** and eliminating the need to install .NET separately!
 
 ## Installation
 
 1. Download the latest release from the [Releases](https://github.com/laudenbachm/MBBS-Launcher/releases) page
-2. Extract the ZIP file to a folder of your choice
-3. Install .NET 6.0 Desktop Runtime if not already installed: [Download .NET 6.0](https://dotnet.microsoft.com/download/dotnet/6.0)
-4. Run `MBBS Launcher.exe`
+2. Extract to a folder of your choice
+3. Run `MBBS Launcher.exe`
 
-**Note:** All images and resources are embedded in the executable - no external files required!
+**That's it!** No .NET runtime installation needed. All dependencies are included in the single executable.
 
 ## Antivirus False Positives
 
@@ -137,7 +161,7 @@ Based on the classic Major BBS launcher:
 
 ### Prerequisites
 
-- .NET 6.0 SDK or later
+- .NET 8.0 SDK or later
 - Windows 10/11 or Windows Server 2016+ (for building)
 - Visual Studio 2022 (optional, recommended)
 
@@ -155,19 +179,22 @@ cd src/MBBSLauncher
 dotnet restore
 dotnet build -c Release
 
-# Publish as single-file executable
-dotnet publish -c Release -r win-x86 --self-contained false /p:PublishSingleFile=true
+# Publish as self-contained single-file executable
+dotnet publish -c Release -r win-x86 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 #### Using Visual Studio
 
-1. Open `src/MBBSLauncher/MBBSLauncher.csproj` in Visual Studio 2022
+1. Open `MBBSLauncher.sln` in Visual Studio 2022
 2. Select **Release** configuration
 3. Build > Publish
-4. Choose target: win-x86
+4. Configure publish settings:
+   - Target: win-x86
+   - Deployment mode: Self-contained
+   - Produce single file: Yes
 5. Click Publish
 
-The compiled executable will be in `bin/Release/net6.0-windows/win-x86/publish/`
+The compiled executable will be in `src/MBBSLauncher/bin/Release/net8.0-windows/win-x86/publish/`
 
 ## Configuration File Format
 
@@ -207,12 +234,22 @@ You can edit this file manually or use the built-in configuration editor (F12).
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-### Current Version: v1.20
+### Current Version: v1.5
+- **Self-contained deployment** - No .NET runtime installation required
+- **Single instance enforcement** - Can't run launcher twice
+- **5-tab configuration window** - Clean, organized interface
+- **Multiple auto-launch programs** - Unlimited programs with independent timers
+- **Launch minimized** - Programs start in background
+- **Automatic v1.20 config migration** - Seamless upgrade
+- **Audit log rotation** - Logs auto-rotate at 500 KB
+- **Upgraded to .NET 8.0** - Latest framework with better performance
+
+### Previous Versions
+#### v1.20
 - Ghost3 support with delayed auto-launch after BBS starts
 - Updated background image
 - Configurable Ghost3 path and delay settings
 
-### Previous Versions
 #### v1.10
 - Fixed version information in file properties to correctly display v1.10.0.0
 - System tray support with minimize to tray functionality
@@ -258,4 +295,4 @@ This application was created with love for The Major BBS community. The Major BB
 
 ---
 
-**MBBS Launcher v1.20** | Created with Love in Iowa | © 2026 Mark Laudenbach
+**MBBS Launcher v1.5** | Created with Love in Iowa | © 2026 Mark Laudenbach

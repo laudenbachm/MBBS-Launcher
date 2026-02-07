@@ -3,7 +3,7 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/MainForm.cs
-// Version: v1.20
+// Version: v1.5
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
@@ -13,6 +13,7 @@
 // 26.01.12.3 - Added auto-start BBS on startup with countdown and cancel
 // 26.01.12.4 - Added F1 Help dialog and F2 Module Editor launcher
 // 26.01.23.1 - Added Ghost3 auto-launch support with countdown
+// 26.02.07.1 - v1.5 - Added AutoLaunchManager integration for multi-program auto-launch
 
 using System;
 using System.Drawing;
@@ -48,10 +49,14 @@ namespace MBBSLauncher.Forms
         private int _autoStartCountdown = 0;
         private bool _autoStartCancelled = false;
 
-        // Ghost3 countdown
+        // Ghost3 countdown (v1.20 legacy - kept for compatibility)
         private System.Windows.Forms.Timer? _ghost3Timer;
         private int _ghost3Countdown = 0;
         private bool _ghost3Cancelled = false;
+
+        // Auto-launch programs (v1.5 feature)
+        private Core.AutoLaunchManager? _autoLaunchManager;
+        private System.Collections.Generic.Dictionary<string, int> _autoLaunchCountdowns = new System.Collections.Generic.Dictionary<string, int>();
 
         // Track window state for restore detection
         private FormWindowState _previousWindowState = FormWindowState.Normal;
@@ -145,6 +150,13 @@ namespace MBBSLauncher.Forms
             _ghost3Timer = new System.Windows.Forms.Timer();
             _ghost3Timer.Interval = 1000; // 1 second interval
             _ghost3Timer.Tick += Ghost3Timer_Tick;
+
+            // Initialize Auto-Launch Manager (v1.5)
+            _autoLaunchManager = new Core.AutoLaunchManager();
+            _autoLaunchManager.LoadFromConfig(_config);
+            _autoLaunchManager.CountdownTick += AutoLaunchManager_CountdownTick;
+            _autoLaunchManager.ProgramLaunched += AutoLaunchManager_ProgramLaunched;
+            _autoLaunchManager.AllLaunchesCancelled += AutoLaunchManager_AllLaunchesCancelled;
 
             // Handle keyboard input
             this.KeyDown += MainForm_KeyDown;
@@ -671,6 +683,76 @@ namespace MBBSLauncher.Forms
             }
         }
 
+        /// <summary>
+        /// Event handler for auto-launch countdown ticks - updates UI.
+        /// </summary>
+        private void AutoLaunchManager_CountdownTick(object? sender, Core.AutoLaunchCountdownEventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    _autoLaunchCountdowns[e.ProgramId] = e.SecondsRemaining;
+                    this.Invalidate();
+                });
+            }
+            else
+            {
+                _autoLaunchCountdowns[e.ProgramId] = e.SecondsRemaining;
+                this.Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Event handler for program launches - removes from countdown UI.
+        /// </summary>
+        private void AutoLaunchManager_ProgramLaunched(object? sender, Core.AutoLaunchEventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    _autoLaunchCountdowns.Remove(e.ProgramId);
+                    this.Invalidate();
+                });
+            }
+            else
+            {
+                _autoLaunchCountdowns.Remove(e.ProgramId);
+                this.Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Event handler for launch cancellation - clears countdown UI.
+        /// </summary>
+        private void AutoLaunchManager_AllLaunchesCancelled(object? sender, EventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    _autoLaunchCountdowns.Clear();
+                    this.Invalidate();
+                });
+            }
+            else
+            {
+                _autoLaunchCountdowns.Clear();
+                this.Invalidate();
+            }
+        }
+
+        private void CancelAllAutoLaunches()
+        {
+            if (_autoLaunchCountdowns.Count > 0)
+            {
+                _autoLaunchManager?.StopAllLaunches();
+                _autoLaunchCountdowns.Clear();
+                this.Invalidate();
+            }
+        }
+
         private void MainForm_Paint(object? sender, PaintEventArgs e)
         {
             if (_backgroundImage != null)
@@ -689,6 +771,12 @@ namespace MBBSLauncher.Forms
             if (_ghost3Countdown > 0)
             {
                 DrawGhost3Countdown(e.Graphics);
+            }
+
+            // Draw auto-launch countdowns (v1.5 feature)
+            if (_autoLaunchCountdowns.Count > 0)
+            {
+                DrawAutoLaunchCountdowns(e.Graphics);
             }
         }
 
@@ -766,6 +854,83 @@ namespace MBBSLauncher.Forms
             }
         }
 
+        /// <summary>
+        /// Draws the auto-launch countdown messages at the bottom of the screen (v1.5 feature).
+        /// </summary>
+        private void DrawAutoLaunchCountdowns(Graphics g)
+        {
+            if (_autoLaunchCountdowns.Count == 0) return;
+
+            // Get all programs with their current countdowns
+            var programs = _autoLaunchManager?.GetAllPrograms();
+            if (programs == null) return;
+
+            int lineNumber = 0;
+            using (Font font = new Font("Consolas", 11f, FontStyle.Bold))
+            {
+                foreach (var kvp in _autoLaunchCountdowns)
+                {
+                    string programId = kvp.Key;
+                    int secondsRemaining = kvp.Value;
+
+                    // Find the program by ID
+                    var program = programs.Find(p => p.Id == programId);
+                    if (program == null) continue;
+
+                    string message = $"Launching {program.Name} in {secondsRemaining} second{(secondsRemaining != 1 ? "s" : "")}...";
+
+                    SizeF textSize = g.MeasureString(message, font);
+
+                    // Position at bottom center, stacked if multiple
+                    float x = (this.ClientSize.Width - textSize.Width) / 2;
+                    float y = this.ClientSize.Height - textSize.Height - 20 - (lineNumber * (textSize.Height + 15));
+
+                    // Draw background rectangle (purple theme for auto-launch)
+                    RectangleF bgRect = new RectangleF(x - 10, y - 5, textSize.Width + 20, textSize.Height + 10);
+                    using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(220, 75, 0, 130)))
+                    {
+                        g.FillRectangle(bgBrush, bgRect);
+                    }
+
+                    // Draw border
+                    using (Pen borderPen = new Pen(Color.FromArgb(255, 138, 43, 226), 2))
+                    {
+                        g.DrawRectangle(borderPen, bgRect.X, bgRect.Y, bgRect.Width, bgRect.Height);
+                    }
+
+                    // Draw text
+                    using (SolidBrush textBrush = new SolidBrush(Color.White))
+                    {
+                        g.DrawString(message, font, textBrush, x, y);
+                    }
+
+                    lineNumber++;
+                }
+
+                // Add cancel instruction at the top if there are countdowns
+                if (lineNumber > 0)
+                {
+                    string cancelMsg = "Press any key or click to cancel all";
+                    SizeF textSize = g.MeasureString(cancelMsg, font);
+                    float x = (this.ClientSize.Width - textSize.Width) / 2;
+                    float y = this.ClientSize.Height - textSize.Height - 20 - (lineNumber * (textSize.Height + 15));
+
+                    // Draw semi-transparent background
+                    RectangleF bgRect = new RectangleF(x - 10, y - 5, textSize.Width + 20, textSize.Height + 10);
+                    using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(180, 0, 0, 0)))
+                    {
+                        g.FillRectangle(bgBrush, bgRect);
+                    }
+
+                    // Draw text
+                    using (SolidBrush textBrush = new SolidBrush(Color.Yellow))
+                    {
+                        g.DrawString(cancelMsg, font, textBrush, x, y);
+                    }
+                }
+            }
+        }
+
         private void MainForm_Resize(object? sender, EventArgs e)
         {
             // Check if we're restoring from minimized
@@ -816,6 +981,13 @@ namespace MBBSLauncher.Forms
             if (_ghost3Countdown > 0)
             {
                 CancelGhost3();
+                return;
+            }
+
+            // Cancel auto-launch countdowns on any click (v1.5 feature)
+            if (_autoLaunchCountdowns.Count > 0)
+            {
+                CancelAllAutoLaunches();
                 return;
             }
 
@@ -978,6 +1150,14 @@ namespace MBBSLauncher.Forms
             if (_ghost3Countdown > 0)
             {
                 CancelGhost3();
+                e.Handled = true;
+                return;
+            }
+
+            // Cancel auto-launch countdowns on any key press (v1.5 feature)
+            if (_autoLaunchCountdowns.Count > 0)
+            {
+                CancelAllAutoLaunches();
                 e.Handled = true;
                 return;
             }
@@ -1208,6 +1388,9 @@ namespace MBBSLauncher.Forms
                     this.Invoke((MethodInvoker)delegate
                     {
                         StartGhost3Countdown();
+
+                        // Start auto-launch programs (v1.5 feature)
+                        _autoLaunchManager?.StartAllLaunches();
                     });
                 }
 
