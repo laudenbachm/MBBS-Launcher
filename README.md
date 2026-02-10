@@ -48,6 +48,7 @@ This was coded by a guy who Googles "how to exit vim" every single time. There W
 - **Architecture:** 32-bit (x86) - runs on both 32-bit and 64-bit Windows
 - **.NET Runtime:** **None required!** (Self-contained build)
 - **Disk Space:** ~65 MB
+- MBBS Launcher needs to run as administrator. 
 
 ### 📦 About the File Size
 
