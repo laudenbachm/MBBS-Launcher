@@ -3,7 +3,7 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Program.cs
-// Version: v1.5
+// Version: v1.55
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
@@ -11,6 +11,8 @@
 // 26.01.12.1 - Bumped version to v1.10
 // 26.01.23.1 - Bumped version to v1.20 - Added Ghost3 support
 // 26.02.07.1 - Bumped version to v1.5 - Self-contained deployment, multi-program auto-launch, 5-tab config
+// 26.02.11.1 - Bumped version to v1.6 - Added administrator privileges requirement
+// 26.02.18.1 - Bumped version to v1.55 - Auto Launch skips already-running processes
 
 using System;
 using System.IO;
@@ -22,7 +24,7 @@ namespace MBBSLauncher
 {
     internal static class Program
     {
-        public const string APP_VERSION = "v1.5";
+        public const string APP_VERSION = "v1.55";
         public const string APP_NAME = "MBBS Launcher";
         public const string AUTHOR = "Mark Laudenbach";
         public const string TAGLINE = "Created with Love in Iowa";
@@ -78,7 +80,7 @@ namespace MBBSLauncher
                     var dialogResult = MessageBox.Show(
                         "Configuration Upgrade Required\n\n" +
                         "MBBS Launcher v1.20 configuration detected.\n\n" +
-                        "Your settings will be upgraded to v1.5 format.\n" +
+                        "Your settings will be upgraded to v1.6 format.\n" +
                         "• All existing settings will be preserved\n" +
                         "• A backup will be created\n" +
                         "• New features will use default values\n\n" +
@@ -96,7 +98,7 @@ namespace MBBSLauncher
                         {
                             MessageBox.Show(
                                 "Configuration Upgraded Successfully!\n\n" +
-                                $"Your settings have been upgraded to v1.5.\n\n" +
+                                $"Your settings have been upgraded to v1.6.\n\n" +
                                 $"✓ {result.MigratedSettings.Count} settings preserved\n" +
                                 $"✓ Backup created\n" +
                                 $"✓ New features available\n\n" +

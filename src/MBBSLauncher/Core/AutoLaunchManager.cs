@@ -3,10 +3,11 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Core/AutoLaunchManager.cs
-// Version: v1.5
+// Version: v1.55
 //
 // Change History:
 // 26.02.06.1 - Initial creation for v1.5
+// 26.02.18.1 - v1.55 - Skip auto-launch if process is already running
 
 using System;
 using System.Collections.Generic;
@@ -258,6 +259,7 @@ namespace MBBSLauncher.Core
 
         /// <summary>
         /// Launches a program without countdown (immediate).
+        /// Skips launch if the process is already running on the system.
         /// </summary>
         private void LaunchProgram(AutoLaunchProgram program)
         {
@@ -270,6 +272,21 @@ namespace MBBSLauncher.Core
                     ProgramName = program.Name,
                     Success = false,
                     ErrorMessage = "File not found"
+                });
+                return;
+            }
+
+            // Check if the process is already running before launching (v1.55)
+            string processName = Path.GetFileNameWithoutExtension(program.Path);
+            if (!string.IsNullOrWhiteSpace(processName) && ProcessHelper.IsProcessRunning(processName))
+            {
+                LogEvent($"Skipping auto-launch of {program.Name} - process '{processName}' is already running");
+                ProgramLaunched?.Invoke(this, new AutoLaunchEventArgs
+                {
+                    ProgramId = program.Id,
+                    ProgramName = program.Name,
+                    Success = true,
+                    ErrorMessage = "Already running - skipped"
                 });
                 return;
             }

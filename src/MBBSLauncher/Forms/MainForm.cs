@@ -3,7 +3,7 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: Forms/MainForm.cs
-// Version: v1.5
+// Version: v1.6
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
@@ -14,6 +14,7 @@
 // 26.01.12.4 - Added F1 Help dialog and F2 Module Editor launcher
 // 26.01.23.1 - Added Ghost3 auto-launch support with countdown
 // 26.02.07.1 - v1.5 - Added AutoLaunchManager integration for multi-program auto-launch
+// 26.02.11.1 - v1.6 - Administrator privileges now required via app.manifest
 
 using System;
 using System.Drawing;
@@ -35,6 +36,7 @@ namespace MBBSLauncher.Forms
         private ToolStripMenuItem? _showMenuItem;
         private ToolStripMenuItem? _startBBSMenuItem;
         private ToolStripMenuItem? _bringToFrontMenuItem;
+        private ToolStripMenuItem? _appManagerMenuItem;
         private ToolStripMenuItem? _configMenuItem;
         private ToolStripMenuItem? _exitMenuItem;
 
@@ -57,6 +59,9 @@ namespace MBBSLauncher.Forms
         // Auto-launch programs (v1.5 feature)
         private Core.AutoLaunchManager? _autoLaunchManager;
         private System.Collections.Generic.Dictionary<string, int> _autoLaunchCountdowns = new System.Collections.Generic.Dictionary<string, int>();
+
+        // App Manager (v1.6 Beta feature)
+        private AppManagerForm? _appManagerForm;
 
         // Track window state for restore detection
         private FormWindowState _previousWindowState = FormWindowState.Normal;
@@ -158,6 +163,10 @@ namespace MBBSLauncher.Forms
             _autoLaunchManager.ProgramLaunched += AutoLaunchManager_ProgramLaunched;
             _autoLaunchManager.AllLaunchesCancelled += AutoLaunchManager_AllLaunchesCancelled;
 
+            // Initialize App Manager (v1.6 Beta)
+            _appManagerForm = new AppManagerForm(_autoLaunchManager, _config);
+            _appManagerForm.BBSCrashed += AppManager_BBSCrashed;
+
             // Handle keyboard input
             this.KeyDown += MainForm_KeyDown;
             this.Paint += MainForm_Paint;
@@ -188,6 +197,8 @@ namespace MBBSLauncher.Forms
             _bringToFrontMenuItem = new ToolStripMenuItem("Bring Program to Front", null, TrayMenu_BringToFront);
             _bringToFrontMenuItem.Visible = false; // Hidden by default, shown when program is running
 
+            _appManagerMenuItem = new ToolStripMenuItem("App Manager (Beta)", null, TrayMenu_ShowAppManager);
+
             _configMenuItem = new ToolStripMenuItem("Configuration (F12)", null, TrayMenu_OpenConfig);
 
             _exitMenuItem = new ToolStripMenuItem("Exit", null, TrayMenu_Exit);
@@ -197,6 +208,7 @@ namespace MBBSLauncher.Forms
             _trayMenu.Items.Add(_startBBSMenuItem);
             _trayMenu.Items.Add(_bringToFrontMenuItem);
             _trayMenu.Items.Add(new ToolStripSeparator());
+            _trayMenu.Items.Add(_appManagerMenuItem);
             _trayMenu.Items.Add(_configMenuItem);
             _trayMenu.Items.Add(new ToolStripSeparator());
             _trayMenu.Items.Add(_exitMenuItem);
@@ -259,6 +271,21 @@ namespace MBBSLauncher.Forms
                 if (process != null)
                 {
                     ProcessHelper.BringToForeground(process);
+                }
+            }
+        }
+
+        private void TrayMenu_ShowAppManager(object? sender, EventArgs e)
+        {
+            if (_appManagerForm != null)
+            {
+                if (_appManagerForm.Visible)
+                {
+                    _appManagerForm.BringToFront();
+                }
+                else
+                {
+                    _appManagerForm.Show();
                 }
             }
         }
@@ -477,6 +504,32 @@ namespace MBBSLauncher.Forms
         private void MainForm_Move(object? sender, EventArgs e)
         {
             // Save position when moved (debounced by only saving on close)
+        }
+
+        /// <summary>
+        /// Handles BBS crash event from App Manager.
+        /// Restores the main launcher window to make it visible to the user.
+        /// </summary>
+        private void AppManager_BBSCrashed(object? sender, EventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => AppManager_BBSCrashed(sender, e)));
+                return;
+            }
+
+            // Restore main window from tray
+            RestoreFromTray();
+
+            // Show notification
+            if (_trayIcon != null)
+            {
+                _trayIcon.ShowBalloonTip(
+                    5000,
+                    "BBS Crashed",
+                    "The Major BBS has stopped unexpectedly. Main window restored.",
+                    ToolTipIcon.Warning);
+            }
         }
 
         private void MainForm_VisibleChanged(object? sender, EventArgs e)
@@ -1391,6 +1444,13 @@ namespace MBBSLauncher.Forms
 
                         // Start auto-launch programs (v1.5 feature)
                         _autoLaunchManager?.StartAllLaunches();
+
+                        // Show App Manager if configured (v1.6 Beta)
+                        bool autoShowAppManager = _config.GetBool("AppManager", "AutoShow", true);
+                        if (autoShowAppManager && _appManagerForm != null)
+                        {
+                            _appManagerForm.Show();
+                        }
                     });
                 }
 

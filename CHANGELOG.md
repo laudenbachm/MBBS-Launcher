@@ -9,6 +9,64 @@ The format for change tracking: `YY.MM.DD.X - HH:MMAM/PM`
 - X = Change number for that day (starts at 1, increments with each change)
 - HH:MM = Time in 12-hour format with AM/PM
 
+## [v1.55] - 2026-02-18
+
+### 26.02.18.1 - 12:00PM
+**Auto Launch Duplicate Instance Prevention**
+
+#### Added
+- **Process Already-Running Check for Auto Launch**
+  - Auto Launch now checks whether a configured application is already running on the system before attempting to launch it
+  - If a matching process is found, the launch is skipped and the event is logged to `audit.log`
+  - Prevents duplicate instances of auto-launch programs (e.g., Ghost3, Telnet server) from being spawned on BBS restart or re-launch
+  - Works correctly regardless of whether the program was launched by MBBS Launcher or started externally
+  - Process detection uses the executable filename (without `.exe` extension) via `Process.GetProcessesByName()`
+
+#### Technical Details
+- Check added to `AutoLaunchManager.LaunchProgram()` immediately after the file-exists guard
+- Uses existing `ProcessHelper.IsProcessRunning()` method — no new dependencies
+- Skipped programs still fire the `ProgramLaunched` event (`Success = true, ErrorMessage = "Already running - skipped"`) so the countdown UI clears correctly
+- Invalid or empty process names are handled gracefully (launch proceeds normally)
+- Manual menu launches (Options 1–8) are **not** affected — check is auto-launch only
+
+---
+
+## [v1.6] - 2026-02-11
+
+### 26.02.11.1 - 09:00PM
+**Administrator Privileges Required**
+
+#### Added
+- **Run as Administrator**
+  - Application now requires administrator privileges for proper operation
+  - UAC elevation prompt automatically displayed on launch
+  - Ensures proper process management and system integration on Windows 11
+  - Application manifest (app.manifest) with requireAdministrator execution level
+  - Enhanced compatibility declarations for Windows 7-11
+  - DPI awareness settings for better display on high-DPI screens
+
+#### Changed
+- Updated version to 1.6.0.0 in all file properties
+- README updated with administrator requirement information
+- System Requirements section now mentions UAC elevation
+- Installation instructions include UAC prompt step
+
+#### Technical Details
+- Added app.manifest with requireAdministrator execution level
+- Manifest includes Windows compatibility declarations (Windows 7-11)
+- DPI awareness set to PerMonitorV2 for optimal scaling
+- ApplicationManifest property added to MBBSLauncher.csproj
+- All version strings updated to 1.6.0
+
+#### Why This Change?
+A user reported issues running the launcher on Windows 11 without administrator privileges. This change ensures the launcher has the necessary permissions to:
+- Properly enumerate and manage BBS processes
+- Bring running applications to foreground
+- Integrate with Windows startup functionality
+- Access system-level APIs for process management
+
+---
+
 ## [v1.20] - 2026-01-23
 
 ### 26.01.23.1 - 01:30PM

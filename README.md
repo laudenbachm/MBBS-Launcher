@@ -1,6 +1,6 @@
 # MBBS Launcher
 
-**Version:** v1.5
+**Version:** v1.6
 
 ## Screenshot
 
@@ -48,7 +48,7 @@ This was coded by a guy who Googles "how to exit vim" every single time. There W
 - **Architecture:** 32-bit (x86) - runs on both 32-bit and 64-bit Windows
 - **.NET Runtime:** **None required!** (Self-contained build)
 - **Disk Space:** ~65 MB
-- MBBS Launcher needs to run as administrator. 
+- **Permissions:** **Administrator privileges required** - The launcher will prompt for UAC elevation on startup
 
 ### 📦 About the File Size
 
@@ -72,8 +72,13 @@ Even though the single file is larger, you're actually using **less disk space o
 1. Download the latest release from the [Releases](https://github.com/laudenbachm/MBBS-Launcher/releases) page
 2. Extract to a folder of your choice
 3. Run `MBBS Launcher.exe`
+4. Click **Yes** when Windows asks for administrator permission (UAC prompt)
 
 **That's it!** No .NET runtime installation needed. All dependencies are included in the single executable.
+
+### Why Administrator Privileges?
+
+MBBS Launcher requires administrator privileges to properly manage BBS processes and system integration features. When you launch the application, Windows will display a User Account Control (UAC) prompt asking for permission. This is normal and required for the launcher to function correctly on Windows 11 and other modern Windows versions.
 
 ## Antivirus False Positives
 
@@ -235,7 +240,11 @@ You can edit this file manually or use the built-in configuration editor (F12).
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-### Current Version: v1.5
+### Current Version: v1.6
+- **Run as Administrator** - Launcher now requires and requests administrator privileges for proper operation on Windows 11
+
+### Previous Versions
+#### v1.5
 - **Self-contained deployment** - No .NET runtime installation required
 - **Single instance enforcement** - Can't run launcher twice
 - **5-tab configuration window** - Clean, organized interface
@@ -245,7 +254,6 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 - **Audit log rotation** - Logs auto-rotate at 500 KB
 - **Upgraded to .NET 8.0** - Latest framework with better performance
 
-### Previous Versions
 #### v1.20
 - Ghost3 support with delayed auto-launch after BBS starts
 - Updated background image
@@ -296,4 +304,4 @@ This application was created with love for The Major BBS community. The Major BB
 
 ---
 
-**MBBS Launcher v1.5** | Created with Love in Iowa | © 2026 Mark Laudenbach
+**MBBS Launcher v1.6** | Created with Love in Iowa | © 2026 Mark Laudenbach

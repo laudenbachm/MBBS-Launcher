@@ -11,9 +11,9 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
 
     <!-- Version Information -->
-    <Version>1.5.0</Version>
-    <AssemblyVersion>1.5.0.0</AssemblyVersion>
-    <FileVersion>1.5.0.0</FileVersion>
+    <Version>1.55.0</Version>
+    <AssemblyVersion>1.55.0.0</AssemblyVersion>
+    <FileVersion>1.55.0.0</FileVersion>
     <Product>MBBS Launcher</Product>
     <Company>Mark Laudenbach</Company>
     <Copyright>Copyright © 2026 Mark Laudenbach - Created with Love in Iowa</Copyright>
@@ -22,6 +22,9 @@
     <!-- 32-bit configuration -->
     <PlatformTarget>x86</PlatformTarget>
     <Prefer32Bit>true</Prefer32Bit>
+
+    <!-- Application Manifest (v1.6 - Run as Administrator) -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
 
     <!-- Self-Contained Deployment (v1.5) -->
     <SelfContained>true</SelfContained>

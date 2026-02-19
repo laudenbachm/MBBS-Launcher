@@ -3,7 +3,7 @@
 // https://github.com/laudenbachm/MBBS-Launcher
 //
 // File: ConfigManager.cs
-// Version: v1.5
+// Version: v1.6
 //
 // Change History:
 // 26.01.07.1 - 06:00PM - Initial creation
@@ -11,6 +11,7 @@
 // 26.01.12.2 - Added AutoStartBBS, AutoStartDelay, QuietMode settings
 // 26.01.23.1 - Added Ghost3 support settings
 // 26.02.07.1 - v1.5: Added multiple auto-launch programs support, using Models namespace
+// 26.02.11.1 - v1.6: Added GetBool/GetInt helper methods for App Manager
 
 using System;
 using System.Collections.Generic;
@@ -202,6 +203,24 @@ namespace MBBSLauncher
             if (_configData.ContainsKey(section) && _configData[section].ContainsKey(key))
                 return _configData[section][key];
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Gets a boolean configuration value
+        /// </summary>
+        public bool GetBool(string section, string key, bool defaultValue = false)
+        {
+            string value = GetValue(section, key, defaultValue.ToString().ToLower());
+            return value.ToLower() == "true";
+        }
+
+        /// <summary>
+        /// Gets an integer configuration value
+        /// </summary>
+        public int GetInt(string section, string key, int defaultValue = 0)
+        {
+            string value = GetValue(section, key, defaultValue.ToString());
+            return int.TryParse(value, out int result) ? result : defaultValue;
         }
 
         /// <summary>
