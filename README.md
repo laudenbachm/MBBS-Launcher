@@ -1,17 +1,17 @@
-# MBBS Launcher
+# MBBSLauncher
 
 **Version:** v1.70
 
 ## Screenshot
 
-![MBBS Launcher Screenshot](images/1280x720%20SS.gif)
+![MBBSLauncher Screenshot](images/1280x720%20SS.gif)
 **Created by:** Mark Laudenbach
 **Created with Love in:** Iowa
 **License:** MIT
 
 ## About
 
-MBBS Launcher is a Windows application that provides easy access to tools and utilities for The Major BBS Version 10 sysops. Inspired by the classic DOS-era Major BBS launcher interface, this modern version brings the nostalgic feel of the original while adding contemporary features and usability.
+MBBSLauncher is a Windows application that provides easy access to tools and utilities for The Major BBS Version 10 sysops. Inspired by the classic DOS-era Major BBS launcher interface, this modern version brings the nostalgic feel of the original while adding contemporary features and usability.
 
 **📺 Watch the v1.55 Demo Video:** https://www.youtube.com/watch?v=RJnNRqCFjWs 
 
@@ -80,11 +80,11 @@ Even though the single file is larger, you're actually using **less disk space o
 
 ### Why Administrator Privileges?
 
-MBBS Launcher requires administrator privileges to properly manage BBS processes and system integration features. When you launch the application, Windows will display a User Account Control (UAC) prompt asking for permission. This is normal and required for the launcher to function correctly on Windows 11 and other modern Windows versions.
+MBBSLauncher requires administrator privileges to properly manage BBS processes and system integration features. When you launch the application, Windows will display a User Account Control (UAC) prompt asking for permission. This is normal and required for the launcher to function correctly on Windows 11 and other modern Windows versions.
 
 ## Antivirus False Positives
 
-Some antivirus software may flag MBBS Launcher as suspicious due to legitimate behaviors that are common in system utilities:
+Some antivirus software may flag MBBSLauncher as suspicious due to legitimate behaviors that are common in system utilities:
 
 - **Process enumeration** - Checking if BBS programs are already running
 - **Window manipulation** - Bringing running programs to foreground
@@ -101,7 +101,7 @@ Some antivirus software may flag MBBS Launcher as suspicious due to legitimate b
 
 ### If Windows Defender Blocks or Deletes the File
 
-**Windows Defender may quarantine this file.** To use MBBS Launcher, you need to add an exclusion:
+**Windows Defender may quarantine this file.** To use MBBSLauncher, you need to add an exclusion:
 
 1. Open **Windows Security** (search for it in Start menu)
 2. Go to **Virus & threat protection** → **Manage settings**
@@ -308,4 +308,4 @@ This application was created with love for The Major BBS community. The Major BB
 
 ---
 
-**MBBS Launcher v1.70** | Created with Love in Iowa | © 2026 Mark Laudenbach
+**MBBSLauncher v1.70** | Created with Love in Iowa | © 2026 Mark Laudenbach
